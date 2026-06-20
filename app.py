@@ -54,22 +54,24 @@ client_ds = OpenAI(
 MODEL = "deepseek-chat"
 chat_counter = 0
 
-# 阿里云 DashScope Client (用于 Qwen / ASR)
-# 务必确保环境变量 DASHSCOPE_API_KEY 已设置
+# DashScope 仅保留备用（已基本弃用）
 DASHSCOPE_API_KEY = os.getenv("DASHSCOPE_API_KEY", "")
-client_qwen = OpenAI(
-    api_key=DASHSCOPE_API_KEY,
-    base_url="https://dashscope.aliyuncs.com/compatible-mode/v1"
+
+# 硅基流动 Client：TTS + STT + 图片生成
+SILICONFLOW_API_KEY = os.getenv("SILICONFLOW_API_KEY", "")
+client_sf = OpenAI(
+    api_key=SILICONFLOW_API_KEY,
+    base_url="https://api.siliconflow.cn/v1"
 )
 
-# Qwen3.5-Omni-Plus 音色映射
-OMNI_VOICE_MAP = {
-    "ENFP": "Sunnybobi",
-    "INFP": "Theo Calm",
-    "ENTP": "Ryan",
-    "ENTJ": "Harvey",
-    "ESTJ": "Ethan",
-    "ENFJ": "Serena"
+# CosyVoice2 音色映射（女声/男声对应角色性别）
+SF_VOICE_MAP = {
+    "ENFP": "FunAudioLLM/CosyVoice2-0.5B:alex",    # 暖暖 - 活泼女声
+    "INFP": "FunAudioLLM/CosyVoice2-0.5B:anna",    # 小沈 - 温柔女声
+    "ENTP": "FunAudioLLM/CosyVoice2-0.5B:benjamin", # 老程 - 男声
+    "ENTJ": "FunAudioLLM/CosyVoice2-0.5B:bella",   # 王姐 - 干练女声
+    "ESTJ": "FunAudioLLM/CosyVoice2-0.5B:bella",   # 李姐 - 稳重女声
+    "ENFJ": "FunAudioLLM/CosyVoice2-0.5B:benjamin", # 赵老师 - 温暖男声
 }
 
 def call_llm(role, messages, max_tokens=200, temperature=1.0, system_prompt=""):
@@ -554,111 +556,73 @@ FORMAT_RULES = (
 
 
 def generate_audio_url(text, role):
+    """TTS：硅基流动 CosyVoice2-0.5B"""
     text = re.sub(r'（.*?）', '', text)
     text = re.sub(r'\(.*?\)', '', text)
     text = re.sub(r'\[.*?\]', '', text)
     text = re.sub(r'[^\w\s,.!?;:：，！一-龥]', '', text)
     text = text.strip()
     if not text: return ""
-    if len(text) > 250: text = text[:248] + "..."
+    if len(text) > 200: text = text[:198] + "…"
+    if not SILICONFLOW_API_KEY: return ""
 
-    voice = OMNI_VOICE_MAP.get(role, "Tina")
+    voice = SF_VOICE_MAP.get(role, "FunAudioLLM/CosyVoice2-0.5B:anna")
     try:
-        print(f"[TTS] Generating audio for {role} with voice {voice} via qwen3.5-omni-plus...", flush=True)
-        completion = client_qwen.chat.completions.create(
-            model="qwen3.5-omni-plus",
-            messages=[{"role": "user", "content": f"请用语音朗读以下文字（不要添加任何额外内容）：{text}"}],
-            modalities=["text", "audio"],
-            audio={"voice": voice, "format": "wav"},
-            stream=True,
-            stream_options={"include_usage": True}
-        )
+        print(f"[TTS] SiliconFlow CosyVoice2 for {role}...", flush=True)
+        from eventlet import tpool
 
-        audio_data = bytearray()
-        for chunk in completion:
-            if chunk.choices:
-                audio_info = getattr(chunk.choices[0].delta, "audio", None)
-                if audio_info:
-                    data = getattr(audio_info, "data", None) or audio_info.get("data", "")
-                    if data:
-                        audio_data.extend(base64.b64decode(data))
+        def _call_tts():
+            return client_sf.audio.speech.create(
+                model="FunAudioLLM/CosyVoice2-0.5B",
+                input=text,
+                voice=voice,
+                response_format="mp3",
+            )
 
-        if audio_data:
-            # Omni streaming TTS returns raw PCM chunks without WAV header.
-            # Prepend a proper WAV header so browsers can play it.
-            sample_rate = 24000
-            bits_per_sample = 16
-            channels = 1
-            data_size = len(audio_data)
-            with io.BytesIO() as buf:
-                buf.write(b'RIFF')
-                buf.write(struct.pack('<I', 36 + data_size))
-                buf.write(b'WAVE')
-                buf.write(b'fmt ')
-                buf.write(struct.pack('<I', 16))  # chunk size
-                buf.write(struct.pack('<H', 1))   # PCM format
-                buf.write(struct.pack('<H', channels))
-                buf.write(struct.pack('<I', sample_rate))
-                byte_rate = sample_rate * channels * bits_per_sample // 8
-                buf.write(struct.pack('<I', byte_rate))
-                buf.write(struct.pack('<H', channels * bits_per_sample // 8))
-                buf.write(struct.pack('<H', bits_per_sample))
-                buf.write(b'data')
-                buf.write(struct.pack('<I', data_size))
-                buf.write(audio_data)
-                wav_data = buf.getvalue()
+        response = tpool.execute(_call_tts)
+        audio_bytes = response.content
+        if not audio_bytes: return ""
 
-            filename = f"tts_{uuid.uuid4()}.wav"
-            filepath = os.path.join("static", "audio", filename)
-            os.makedirs(os.path.join("static", "audio"), exist_ok=True)
-            with open(filepath, "wb") as f:
-                f.write(wav_data)
-            print(f"[TTS] Success: {filename} ({len(wav_data)} bytes)", flush=True)
-            return f"/static/audio/{filename}"
-        print("[TTS] No audio data received", flush=True)
-        return ""
+        filename = f"tts_{uuid.uuid4()}.mp3"
+        filepath = os.path.join("static", "audio", filename)
+        os.makedirs(os.path.join("static", "audio"), exist_ok=True)
+        with open(filepath, "wb") as f:
+            f.write(audio_bytes)
+        print(f"[TTS] Success: {filename} ({len(audio_bytes)} bytes)", flush=True)
+        return f"/static/audio/{filename}"
     except Exception as e:
         print(f"[TTS] Exception: {e}", flush=True)
         return ""
 
 def generate_image_url(prompt):
-    """Generate image using qwen-image-2.0-pro (synchronous, no polling needed)"""
-    api_key = os.getenv("DASHSCOPE_API_KEY", "")
-    headers = {"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"}
-    data = {
-        "model": "qwen-image-2.0-pro",
-        "input": {
-            "messages": [
-                {"role": "user", "content": [{"text": prompt}]}
-            ]
-        },
-        "parameters": {"n": 1, "size": "1024*1024", "prompt_extend": True, "watermark": False}
-    }
+    """图片生成：硅基流动 Kwai-Kolors/Kolors（免费）"""
+    if not SILICONFLOW_API_KEY: return ""
     try:
-        print(f"[Image] Generating: {prompt[:80]}...", flush=True)
-        resp = requests.post("https://dashscope.aliyuncs.com/api/v1/services/aigc/multimodal-generation/generation",
-                             headers=headers, json=data, timeout=60)
-        if resp.status_code != 200:
-            print(f"[Image] Error: {resp.text}", flush=True)
-            return ""
-        res = resp.json()
-        url = res.get('output', {}).get('choices', [{}])[0].get('message', {}).get('content', [{}])[0].get('image', '')
-        if not url:
-            print(f"[Image] Unexpected response: {res}", flush=True)
-            return ""
-        # Download immediately since URL is temporary
-        try:
-            img_resp = requests.get(url, timeout=30)
-            if img_resp.status_code == 200:
-                from eventlet import tpool
-                filename = f"img_{uuid.uuid4()}.png"
-                filepath = os.path.join("static", "uploads", filename)
-                tpool.execute(lambda: (os.makedirs(os.path.join("static", "uploads"), exist_ok=True),
-                                       open(filepath, "wb").write(img_resp.content)))
-                print(f"[Image] Success: {filename}", flush=True)
-                return f"/static/uploads/{filename}"
-        except Exception as dl_e:
-            print(f"[Image] Download failed, using remote URL: {dl_e}", flush=True)
+        print(f"[Image] SiliconFlow Kolors: {prompt[:60]}...", flush=True)
+        from eventlet import tpool
+
+        def _call_image():
+            return client_sf.images.generate(
+                model="Kwai-Kolors/Kolors",
+                prompt=prompt,
+                n=1,
+                image_size="1024x1024",
+            )
+
+        response = tpool.execute(_call_image)
+        url = response.data[0].url if response.data else ""
+        if not url: return ""
+
+        # 下载保存到本地（远端 URL 可能临时失效）
+        img_resp = requests.get(url, timeout=30)
+        if img_resp.status_code == 200:
+            filename = f"img_{uuid.uuid4()}.png"
+            filepath = os.path.join("static", "uploads", filename)
+            os.makedirs(os.path.join("static", "uploads"), exist_ok=True)
+            with open(filepath, "wb") as f:
+                f.write(img_resp.content)
+            print(f"[Image] Success: {filename}", flush=True)
+            return f"/static/uploads/{filename}"
         return url
     except Exception as e:
         print(f"[Image] Exception: {e}", flush=True)
@@ -1617,49 +1581,15 @@ def voice_to_text():
         except Exception:
             pass
 
-        # Call Qwen3.5-Omni-Plus for transcription via REST API
-        print(f"[STT] Calling qwen3.5-omni-plus for transcription...", flush=True)
-
-        headers = {"Authorization": f"Bearer {DASHSCOPE_API_KEY}", "Content-Type": "application/json"}
-        payload = {
-            "model": "qwen3.5-omni-plus",
-            "input": {
-                "messages": [
-                    {
-                        "role": "user",
-                        "content": [
-                            {"audio": f"data:audio/wav;base64,{audio_b64}"},
-                            {"text": "请转写这段音频，只输出文字内容，不要多余解释。"}
-                        ]
-                    }
-                ]
-            }
-        }
-
-        # Remove proxies temporarily for DashScope
-        saved = {}
-        for k in ["HTTP_PROXY", "HTTPS_PROXY", "ALL_PROXY", "http_proxy", "https_proxy", "all_proxy"]:
-            if k in os.environ:
-                saved[k] = os.environ.pop(k)
-        os.environ.setdefault("NO_PROXY", "dashscope.aliyuncs.com,aliyuncs.com,localhost,127.0.0.1")
-        try:
-            resp = requests.post(
-                "https://dashscope.aliyuncs.com/api/v1/services/aigc/multimodal-generation/generation",
-                headers=headers, json=payload, timeout=60
+        # 硅基流动 SenseVoiceSmall 语音识别
+        print(f"[STT] SiliconFlow SenseVoiceSmall...", flush=True)
+        with open(convert_path, "rb") as af:
+            transcription = client_sf.audio.transcriptions.create(
+                model="FunAudioLLM/SenseVoiceSmall",
+                file=af,
             )
-            if resp.status_code == 200:
-                res = resp.json()
-                text = res.get("output", {}).get("choices", [{}])[0].get("message", {}).get("content", "")
-                if isinstance(text, list):
-                    text = "".join(t.get("text", "") for t in text if isinstance(t, dict))
-                text = (text or "").strip()
-                print(f"[STT] Result in {time.time()-start_time:.2f}s: {text[:100]}", flush=True)
-            else:
-                print(f"[STT] API Error: {resp.status_code} - {resp.text[:300]}", flush=True)
-                text = ""
-        finally:
-            for k, v in saved.items():
-                os.environ[k] = v
+        text = (transcription.text or "").strip()
+        print(f"[STT] Result in {time.time()-start_time:.2f}s: {text[:100]}", flush=True)
 
         if text:
             return jsonify({"ok": True, "text": text, "url": audio_url_path, "meta": {}})
