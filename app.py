@@ -74,8 +74,8 @@ OMNI_VOICE_MAP = {
 
 def call_llm(role, messages, max_tokens=200, temperature=1.0, system_prompt=""):
     """
-    统一的大模型调用入口，根据角色分流到 DeepSeek 或 Qwen
-    支持 system_prompt 参数，非空时在 messages 前插入 system role 消息
+    统一的大模型调用入口：全部走 DeepSeek，Qwen 仅作兜底
+    DashScope (DASHSCOPE_API_KEY) 仅用于 TTS / STT / 图片生成 / 视觉理解
     """
     try:
         from eventlet import tpool
@@ -149,18 +149,8 @@ def call_llm(role, messages, max_tokens=200, temperature=1.0, system_prompt=""):
                 raise RuntimeError("DeepSeek empty content")
             return content
 
-        # Prefer Qwen for ENTJ/ESTJ; others prefer DeepSeek when available.
-        prefer_qwen = (role in ["ENTJ", "ESTJ"] and qwen_ok) or (role not in ["ENTJ", "ESTJ"] and (not deepseek_ok) and qwen_ok)
-
-        if prefer_qwen:
-            try:
-                return _try_qwen()
-            except Exception as e:
-                print(f"[LLM] Qwen failed for {role}: {e}", flush=True)
-                if deepseek_ok:
-                    return _try_deepseek()
-                return ""
-        else:
+        # 全部走 DeepSeek，Qwen 仅作兜底
+        if deepseek_ok:
             try:
                 return _try_deepseek()
             except Exception as e:
