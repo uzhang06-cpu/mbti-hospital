@@ -594,54 +594,137 @@ def generate_audio_url(text, role):
         print(f"[TTS] Exception: {e}", flush=True)
         return ""
 
-def generate_image_url(prompt):
-    """图片生成：硅基流动 Kwai-Kolors/Kolors（免费，支持中文）"""
-    if not SILICONFLOW_API_KEY: return ""
-    from eventlet import tpool
+# ── 各角色表情包偏好词（随机选一个搜斗图啦）────────────────────
+ROLE_MEME_KEYWORDS = {
+    "ENFP": ["哈哈哈", "可爱", "开心", "好玩", "笑死"],
+    "INFP": ["治愈", "温柔", "难过", "唯美", "发呆"],
+    "ENTP": ["无语", "绝了", "哲学", "梗图", "服了"],
+    "ENTJ": ["加油", "冲", "认真", "成功", "牛"],
+    "ESTJ": ["靠谱", "认真", "规矩", "稳", "踏实"],
+    "ENFJ": ["温暖", "感动", "一起", "关心", "爱"],
+}
+
+# 各角色发表情包的概率（0~1）
+ROLE_MEME_PROB = {
+    "ENFP": 0.55,
+    "INFP": 0.20,
+    "ENTP": 0.65,
+    "ENTJ": 0.20,
+    "ESTJ": 0.25,
+    "ENFJ": 0.35,
+}
+
+_IMG_HEADERS = {
+    "User-Agent": (
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+        "AppleWebKit/537.36 (KHTML, like Gecko) "
+        "Chrome/124.0.0.0 Safari/537.36"
+    ),
+    "Accept-Language": "zh-CN,zh;q=0.9",
+}
+
+
+def _scrape_doutula(keyword: str) -> str:
+    """斗图啦：搜索表情包，返回图片直链"""
     try:
-        print(f"[Image] SiliconFlow Kolors: {prompt[:60]}...", flush=True)
-        headers = {"Authorization": f"Bearer {SILICONFLOW_API_KEY}",
-                   "Content-Type": "application/json"}
-        payload = {
-            "model": "Kwai-Kolors/Kolors",
-            "prompt": prompt,
-            "image_size": "1024x1024",
-            "batch_size": 1,
-            "num_inference_steps": 20,
-            "guidance_scale": 7.5,
-        }
-
-        def _call():
-            return requests.post("https://api.siliconflow.cn/v1/images/generations",
-                                 headers=headers, json=payload, timeout=60)
-        resp = tpool.execute(_call)
+        q = urllib.parse.quote(keyword)
+        url = f"https://www.doutula.com/search?keyword={q}&type=1"
+        resp = requests.get(url, headers=_IMG_HEADERS, timeout=8)
         if resp.status_code != 200:
-            print(f"[Image] API Error {resp.status_code}: {resp.text[:300]}", flush=True)
             return ""
-
-        res = resp.json()
-        # 硅基流动返回格式：{"images": [{"url": "..."}]}
-        images = res.get("images") or res.get("data") or []
-        url = images[0].get("url", "") if images else ""
-        if not url:
-            print(f"[Image] No url in response: {str(res)[:300]}", flush=True)
-            return ""
-
-        # 下载保存到本地
-        img_resp = tpool.execute(lambda: requests.get(url, timeout=30))
-        if img_resp.status_code == 200:
-            filename = f"img_{uuid.uuid4()}.png"
-            filepath = os.path.join("static", "uploads", filename)
-            os.makedirs(os.path.join("static", "uploads"), exist_ok=True)
-            with open(filepath, "wb") as f:
-                f.write(img_resp.content)
-            print(f"[Image] Success: {filename}", flush=True)
-            return f"/static/uploads/{filename}"
-        return url
+        # 优先取 data-original（懒加载），再取 src
+        imgs = re.findall(r'data-original="(https?://[^"]+\.(?:jpg|jpeg|gif|png))"', resp.text)
+        if not imgs:
+            imgs = re.findall(r'<img[^>]+src="(https?://[^"]+\.(?:jpg|jpeg|gif|png))"', resp.text)
+        # 过滤掉 logo/广告小图（url 里通常带 logo/banner/icon）
+        imgs = [u for u in imgs if not any(s in u.lower() for s in ["logo", "banner", "icon", "avatar"])]
+        result = random.choice(imgs[:20]) if imgs else ""
+        print(f"[Doutula] '{keyword}' → {len(imgs)} 张，选: {result[:60]}", flush=True)
+        return result
     except Exception as e:
-        print(f"[Image] Exception: {e}", flush=True)
-        traceback.print_exc()
+        print(f"[Doutula] 异常: {e}", flush=True)
         return ""
+
+
+def _scrape_bing(keyword: str) -> str:
+    """Bing 中文图片搜索，返回图片直链"""
+    try:
+        q = urllib.parse.quote(keyword)
+        url = f"https://www.bing.com/images/search?q={q}&mkt=zh-CN&safeSearch=Moderate&first=1"
+        resp = requests.get(url, headers=_IMG_HEADERS, timeout=10)
+        if resp.status_code != 200:
+            return ""
+        # Bing 在 HTML 里内嵌 murl（原图链接）
+        urls = re.findall(r'"murl":"(https?://[^"]+\.(?:jpg|jpeg|png|gif))"', resp.text)
+        urls = [u for u in urls if not any(s in u for s in ["bing.com", "microsoft.com", "msn.com"])]
+        result = random.choice(urls[:30]) if urls else ""
+        print(f"[Bing] '{keyword}' → {len(urls)} 张，选: {result[:60]}", flush=True)
+        return result
+    except Exception as e:
+        print(f"[Bing] 异常: {e}", flush=True)
+        return ""
+
+
+def _save_remote_image(url: str) -> str:
+    """下载远程图片保存到本地 static/uploads，返回本地路径"""
+    try:
+        resp = requests.get(url, headers=_IMG_HEADERS, timeout=12)
+        if resp.status_code != 200 or not resp.content:
+            return ""
+        ct = resp.headers.get("Content-Type", "")
+        ext = ".gif" if "gif" in ct or url.lower().endswith(".gif") else ".jpg"
+        filename = f"img_{uuid.uuid4()}{ext}"
+        filepath = os.path.join("static", "uploads", filename)
+        os.makedirs(os.path.join("static", "uploads"), exist_ok=True)
+        with open(filepath, "wb") as f:
+            f.write(resp.content)
+        print(f"[ImgSave] {filename} ({len(resp.content)//1024}KB)", flush=True)
+        return f"/static/uploads/{filename}"
+    except Exception as e:
+        print(f"[ImgSave] 异常: {e}", flush=True)
+        return ""
+
+
+def search_image_url(img_desc: str, role: str) -> str:
+    """
+    图片搜索主入口（替代原 AI 生图）
+    - 按角色性格概率决定搜表情包还是真实图片
+    - 表情包：斗图啦（角色偏好词，随机）
+    - 真实图片：Bing 中文图片（用 img_desc 搜索）
+    - 两层兜底，任一成功即返回本地路径
+    """
+    from eventlet import tpool
+
+    use_meme = random.random() < ROLE_MEME_PROB.get(role, 0.35)
+
+    if use_meme:
+        kw = random.choice(ROLE_MEME_KEYWORDS.get(role, ["表情包"]))
+        raw_url = tpool.execute(_scrape_doutula, kw)
+        if raw_url:
+            local = tpool.execute(_save_remote_image, raw_url)
+            if local:
+                return local
+
+    # 用 img_desc 搜 Bing 真实图片
+    raw_url = tpool.execute(_scrape_bing, img_desc[:40])
+    if raw_url:
+        local = tpool.execute(_save_remote_image, raw_url)
+        if local:
+            return local
+
+    return ""
+
+
+# 保留别名，兼容旧调用（逐步替换）
+def generate_image_url(prompt):
+    role = ""
+    # 从 prompt 里猜 role（格式："暖暖的风格, ..."）
+    for r, n in ROLE_NAME.items():
+        if n in prompt:
+            role = r
+            break
+    desc = re.sub(r'^[^,，]+[,，]\s*', '', prompt)  # 去掉 "暖暖的风格, " 前缀
+    return search_image_url(desc, role)
 
 
 def extract_image(text):
@@ -828,7 +911,7 @@ def create_single_moment(role, user_id, room):
 
     if content:
         img_desc, content = extract_image(content)
-        img_url   = generate_image_url(f"{ROLE_NAME.get(role, role)}的风格, {img_desc}") if img_desc else ""
+        img_url   = search_image_url(img_desc, role) if img_desc else ""
         audio_url = ""
         if random.random() < 0.15:
             audio_url = generate_audio_url(content.replace("[VOICE]", "")[:60], role)
@@ -879,17 +962,17 @@ def trigger_ai_reply(role, trigger_role, trigger_content, user_id, room, is_star
         )
         raw = clean_raw(role, resp_content)
         img_desc, raw = extract_image(raw)
-        img_url = generate_image_url(f"{ROLE_NAME.get(role, role)}的风格, {img_desc}") if img_desc else ""
+        img_url = search_image_url(img_desc, role) if img_desc else ""
 
         bubbles = split_bubbles(raw)
         merged = " ".join(bubbles) if bubbles else raw
 
-        # 强制发图：用户要求了但AI没输出[IMG:]时，用AI回复内容生成配图
+        # 强制发图：用户要求发图但AI没输出[IMG:]时，用回复内容搜图
         if not img_url and trigger_role == "INFJ" and trigger_content:
             img_keywords = ["发图", "发图片", "发张图", "照片", "图片", "图看看"]
             if any(k in (trigger_content or "") for k in img_keywords):
-                print(f"[DEBUG] Force image generation for {role} based on content", flush=True)
-                img_url = generate_image_url(f"{ROLE_NAME.get(role, role)}的风格, {merged[:200]}")
+                print(f"[DEBUG] Force image search for {role}", flush=True)
+                img_url = search_image_url(merged[:60], role)
 
         if not bubbles and not img_url: return
 
@@ -978,17 +1061,17 @@ def trigger_dm_reply(role, user_content, user_id, room):
         )
         raw = clean_raw(role, resp_content)
         img_desc, raw = extract_image(raw)
-        img_url = generate_image_url(f"{ROLE_NAME.get(role, role)}的风格, {img_desc}") if img_desc else ""
+        img_url = search_image_url(img_desc, role) if img_desc else ""
 
         bubbles = split_bubbles(raw)
         merged = " ".join(bubbles) if bubbles else raw
 
-        # 强制发图：用户要求了但AI没输出[IMG:]时，用AI回复内容生成配图
+        # 强制发图：用户要求发图但AI没输出[IMG:]时，用回复内容搜图
         if not img_url and user_content:
             img_keywords = ["发图", "发图片", "发张图", "照片", "图片", "图看看"]
             if any(k in (user_content or "") for k in img_keywords):
-                print(f"[DEBUG] DM force image generation for {role}", flush=True)
-                img_url = generate_image_url(f"{ROLE_NAME.get(role, role)}的风格, {merged[:200]}")
+                print(f"[DEBUG] DM force image search for {role}", flush=True)
+                img_url = search_image_url(merged[:60], role)
 
         if not bubbles and not img_url: return
 
