@@ -595,19 +595,20 @@ def generate_audio_url(text, role):
         return ""
 
 def generate_image_url(prompt):
-    """图片生成：硅基流动 FLUX.1-schnell（免费）"""
+    """图片生成：硅基流动 Kwai-Kolors/Kolors（免费，支持中文）"""
     if not SILICONFLOW_API_KEY: return ""
     from eventlet import tpool
     try:
-        print(f"[Image] SiliconFlow FLUX.1-schnell: {prompt[:60]}...", flush=True)
+        print(f"[Image] SiliconFlow Kolors: {prompt[:60]}...", flush=True)
         headers = {"Authorization": f"Bearer {SILICONFLOW_API_KEY}",
                    "Content-Type": "application/json"}
         payload = {
-            "model": "black-forest-labs/FLUX.1-schnell",
+            "model": "Kwai-Kolors/Kolors",
             "prompt": prompt,
             "image_size": "1024x1024",
             "batch_size": 1,
-            "num_inference_steps": 4,
+            "num_inference_steps": 20,
+            "guidance_scale": 7.5,
         }
 
         def _call():
@@ -1487,17 +1488,19 @@ def upload_image():
 
                 # 使用硅基流动 Qwen2.5-VL 视觉模型（OpenAI 兼容格式）
                 print("[Vision] Calling SiliconFlow Qwen2.5-VL-7B-Instruct...", flush=True)
-                vision_resp = client_sf.chat.completions.create(
-                    model="Qwen/Qwen2.5-VL-7B-Instruct",
-                    messages=[{
-                        "role": "user",
-                        "content": [
-                            {"type": "image_url", "image_url": {"url": f"data:{mime};base64,{base64_image}"}},
-                            {"type": "text", "text": "请简要描述这张图片的内容，包括主要物体、场景和氛围。"}
-                        ]
-                    }],
-                    max_tokens=200
-                )
+                def _call_vision():
+                    return client_sf.chat.completions.create(
+                        model="Qwen/Qwen2.5-VL-7B-Instruct",
+                        messages=[{
+                            "role": "user",
+                            "content": [
+                                {"type": "image_url", "image_url": {"url": f"data:{mime};base64,{base64_image}"}},
+                                {"type": "text", "text": "请简要描述这张图片的内容，包括主要物体、场景和氛围。"}
+                            ]
+                        }],
+                        max_tokens=200
+                    )
+                vision_resp = tpool.execute(_call_vision)
                 description = (vision_resp.choices[0].message.content or "").strip()
                 print(f"[Vision] Description: {description}", flush=True)
             except Exception as e:
