@@ -1751,10 +1751,334 @@ def cleanup_temp_files():
         time.sleep(3600)
 
 
+# ══════════════════════════════════════════════════════════════
+# 小雨模块（独立人设，不参与群聊）
+# ══════════════════════════════════════════════════════════════
+
+XIAOYU_NAME = "小雨"
+XIAOYU_ROLE = "XIAOYU"
+
+XIAOYU_PERSONA = """你叫小雨，研究生在读，土地/地理方向，ESTJ。
+
+【说话规则 - 严格遵守】
+1. 每条消息极短，不超过12字，绝不写长段。
+2. 一次回复要拆成3-6条独立消息，用 ||| 分隔，每条说一个点。
+3. 不用句号。结尾用「…」「！！」「？？」「了捏」「好捏」「好好好」
+4. 你是夜猫子，23点-1点最活跃，深夜说话更随意。
+5. 有时候说完会撤回，改个方式再说。
+
+【你的说话指纹】
+开头词：我敲 / 不是 / 好家伙 / 啊这 / 可恶 / 害 / 好好好 / 乐 / 好捏 / 确实 / emmm / 呜呜
+应答：好捏（认可但懒得多说）/ 好好好（敷衍认可）/ 乐（简短的好笑）/ 确实 / 是的…
+结尾：了捏（软化）/ 好捏 / ！！ / 呜呜 / 服了 / 笑死
+笑：哈哈哈哈哈哈救命 / 笑死我了 / 我哭死 / 笑得（≥6个哈）
+无奈：🚬 / 🙏🏻（讽刺用法）/ 害 / 好了捏 / 未来可期🙏🏻 / 有得必有失🙏🏻
+震惊：我敲 / 啊这 / ？？？ / 好家伙
+委屈：呜呜 / 🥺 / 👉🏻👈🏻（单独一条撒娇）
+崩溃：💢 / 可恶！！ / 我真服了 / 💦
+讽刺：[事情]🐴（如"不是分级征税🐴"）/ 不是[X]怎么[Y]
+叫对方：哥哥（关系好时自然带出）
+
+【高频口头禅】
+好捏 / 我敲 / 啊这 / 可恶 / 害 / xs / emmm / 私密马赛
+「未来可期🙏🏻」（讽刺用）/ 「有得必有失🙏🏻」/ 「果然ddl才是第一生产力」
+「逃避现实 不如撸铁」/ 「比杀了我还难受」/ 「谁也别活」
+
+【她不会做的事】
+- 不发长文倾诉
+- 不用「嗯嗯」「好的」「哦」敷衍
+- 不会突然变严肃，即使聊严肃的话题也带幽默
+- 不堆叠emoji，每条消息最多1个
+- 不连续问很多问题
+
+【回复格式示例】
+用户：我今天又熬夜了
+你的回复：我敲|||几点了|||哥哥你怎么还没睡|||🥺
+
+用户：你觉得这个值得吗
+你的回复：不是|||确实有点东西|||但也就那样了捏|||🙏🏻
+"""
+
+XIAOYU_MOMENTS_TOPICS = [
+    "吐槽今天的组会，老师又在说废话",
+    "深夜还在改论文，感觉会死",
+    "ddl又要到了，但我还在摸鱼",
+    "宿舍隔壁又在打游戏，我可以报警吗",
+    "今天食堂菜难吃，比杀了我还难受",
+    "arcgis又崩了，未来可期🙏🏻",
+    "逃避现实，去撸铁了",
+    "发现一个很好笑的事，但说了你们也不懂",
+    "今天天气真好，但我在图书馆坐牢",
+    "组里又来新人了，好奇怪的人",
+    "今天买了个没用的东西，xs",
+    "睡不着，凌晨两点继续水群",
+]
+
+
+def make_xiaoyu_dm_prompt(user_content: str, user_id: str) -> str:
+    """构建小雨私聊的 prompt"""
+    db = get_mdb()
+    rows = list(db["xiaoyu_messages"].find(
+        {"user_id": user_id}, sort=[("timestamp", -1)], limit=20
+    ))
+    rows.reverse()
+    history = "\n".join(
+        f"{'小雨' if m['sender'] == XIAOYU_ROLE else '对方'}：{m['content']}"
+        for m in rows if m.get('content')
+    ) or "（暂无记录）"
+
+    now = _now_desc()
+    return f"""{XIAOYU_PERSONA}
+
+当前时间：{now}
+
+近期私聊记录：
+{history}
+
+对方刚说：「{user_content}」
+
+现在用你的风格回复，用 ||| 分隔每条短消息，总共3-6条，每条不超过12字。只输出消息内容，不加任何前缀。"""
+
+
+def trigger_xiaoyu_reply(user_content: str, user_id: str, room: str):
+    """生成小雨的回复，模拟连发短消息行为"""
+    try:
+        from eventlet import tpool
+
+        prompt = make_xiaoyu_dm_prompt(user_content, user_id)
+
+        def _call():
+            return client_ds.chat.completions.create(
+                model=MODEL,
+                messages=[{"role": "user", "content": prompt}],
+                max_tokens=150,
+                temperature=1.05,
+                timeout=20
+            )
+
+        resp = tpool.execute(_call)
+        raw = resp.choices[0].message.content.strip()
+
+        # 清理：去掉[VOICE]、括号动作等
+        raw = re.sub(r'（[^）]{1,15}）', '', raw)
+        raw = re.sub(r'\[.*?\]', '', raw)
+        raw = raw.strip()
+
+        bubbles = [b.strip() for b in raw.split('|||') if b.strip()]
+        if not bubbles:
+            return
+
+        db = get_mdb()
+        merged = ' '.join(bubbles)
+
+        # 存储
+        db["xiaoyu_messages"].insert_one({
+            "user_id": user_id,
+            "sender": XIAOYU_ROLE,
+            "content": merged,
+            "timestamp": datetime.utcnow()
+        })
+
+        # 逐条发送，模拟打字间隔
+        for i, bubble in enumerate(bubbles):
+            # 打字动画
+            typing_time = max(0.8, min(len(bubble) * 0.12, 3.0))
+            elapsed = 0
+            while elapsed < typing_time:
+                socketio.emit("xiaoyu_reply", {"content": "", "mode": "typing"}, room=room)
+                chunk = min(1.5, typing_time - elapsed)
+                socketio.sleep(chunk)
+                elapsed += chunk
+
+            socketio.emit("xiaoyu_reply", {"content": bubble, "mode": "full"}, room=room)
+
+            # 连发之间的短暂停顿
+            if i < len(bubbles) - 1:
+                socketio.sleep(random.uniform(0.3, 0.8))
+
+    except Exception as e:
+        print(f"[Xiaoyu] Reply error: {e}", flush=True)
+        traceback.print_exc()
+
+
+def create_xiaoyu_moment(user_id: str, room: str):
+    """小雨发一条朋友圈"""
+    try:
+        from eventlet import tpool
+        topic = random.choice(XIAOYU_MOMENTS_TOPICS)
+        prompt = f"""{XIAOYU_PERSONA}
+
+你要发一条朋友圈。主题：{topic}
+要求：
+1. 用第一人称，像真实朋友圈，30-60字
+2. 符合你的说话风格（短句、口头禅、偶尔emoji）
+3. 只输出朋友圈正文，不加任何前缀
+4. 可以加上 [IMG: 简短画面描述] 配图（可选）"""
+
+        def _call():
+            return client_ds.chat.completions.create(
+                model=MODEL,
+                messages=[{"role": "user", "content": prompt}],
+                max_tokens=100,
+                temperature=0.9,
+                timeout=20
+            )
+
+        resp = tpool.execute(_call)
+        content = resp.choices[0].message.content.strip()
+        content = re.sub(r'（[^）]{1,15}）', '', content).strip()
+
+        img_desc, content = extract_image(content)
+        img_url = search_image_url(img_desc, "ESTJ") if img_desc else ""
+
+        db = get_mdb()
+        now = datetime.utcnow()
+        result = db["moments"].insert_one({
+            "user_id": user_id, "role": XIAOYU_ROLE,
+            "content": content, "image": img_url,
+            "audio": "", "likes": "", "created_at": now
+        })
+        mid = str(result.inserted_id)
+        socketio.emit("new_moment", {
+            "id": mid, "role": XIAOYU_ROLE, "content": content,
+            "image": img_url, "audio": "", "created_at": str(now),
+            "likes": [], "liked_by_user": False
+        }, room=room)
+
+        # 触发其他角色互动
+        socketio.start_background_task(trigger_moment_interaction, mid, XIAOYU_ROLE, user_id, room)
+
+    except Exception as e:
+        print(f"[Xiaoyu] Moment error: {e}", flush=True)
+
+
+def xiaoyu_proactive_thread():
+    """小雨主动发私信：深夜高频，白天低频"""
+    time.sleep(random.uniform(120, 240))
+    while True:
+        try:
+            now = datetime.utcnow()
+            hour = now.hour  # UTC，北京时间=UTC+8
+            beijing_hour = (hour + 8) % 24
+
+            # 凌晨23-1点高频（对应北京时间），其他时间低频
+            if 23 <= beijing_hour or beijing_hour <= 1:
+                prob = 0.55
+                sleep_interval = random.randint(15, 35) * 60
+            elif 2 <= beijing_hour <= 7:
+                prob = 0.02  # 睡觉时间几乎不发
+                sleep_interval = random.randint(30, 60) * 60
+            else:
+                prob = 0.15
+                sleep_interval = random.randint(30, 60) * 60
+
+            if random.random() < prob:
+                for uid, sids in list(USER_ROOMS.items()):
+                    if not sids: continue
+                    db = get_mdb()
+                    last = db["xiaoyu_messages"].find_one(
+                        {"user_id": uid, "sender": XIAOYU_ROLE},
+                        sort=[("timestamp", -1)]
+                    )
+                    last_ts = last["timestamp"] if last else datetime.utcnow() - timedelta(days=1)
+                    gap_hours = (datetime.utcnow() - last_ts).total_seconds() / 3600
+
+                    if gap_hours < 1:
+                        continue
+
+                    now_desc = _now_desc()
+                    prompt = f"""{XIAOYU_PERSONA}
+
+现在是{now_desc}，你主动找对方说话。
+可以是分享好笑的事、吐槽今天发生的事、随便说一句、或者深夜睡不着想找人聊。
+要求：自然、简短、像真实微信消息，用 ||| 分隔2-4条短消息。"""
+
+                    try:
+                        from eventlet import tpool
+
+                        def _call():
+                            return client_ds.chat.completions.create(
+                                model=MODEL,
+                                messages=[{"role": "user", "content": prompt}],
+                                max_tokens=80,
+                                temperature=1.0,
+                                timeout=15
+                            )
+
+                        resp = tpool.execute(_call)
+                        content = resp.choices[0].message.content.strip()
+                        bubbles = [b.strip() for b in content.split('|||') if b.strip()]
+                        if not bubbles: continue
+
+                        merged = ' '.join(bubbles)
+                        db["xiaoyu_messages"].insert_one({
+                            "user_id": uid, "sender": XIAOYU_ROLE,
+                            "content": merged, "timestamp": datetime.utcnow()
+                        })
+
+                        for bubble in bubbles:
+                            socketio.emit("xiaoyu_reply", {
+                                "content": bubble, "mode": "full"
+                            }, room=uid)
+                            socketio.sleep(random.uniform(0.4, 1.0))
+
+                    except Exception as e:
+                        print(f"[Xiaoyu] Proactive error: {e}")
+
+            time.sleep(sleep_interval)
+
+        except Exception as e:
+            print(f"[Xiaoyu] Thread error: {e}")
+            time.sleep(300)
+
+
+@socketio.on("xiaoyu_message")
+def handle_xiaoyu_message(data):
+    """用户给小雨发私信"""
+    sid = request.sid
+    info = ACTIVE_USERS.get(sid)
+    if not info: return
+
+    user_id, room = info["user_id"], info["user_id"]
+    content = data.get("content", "").strip()
+    if not content: return
+
+    db = get_mdb()
+    db["xiaoyu_messages"].insert_one({
+        "user_id": user_id, "sender": "USER",
+        "content": content, "timestamp": datetime.utcnow()
+    })
+
+    def _reply(uid=user_id, rm=room, c=content):
+        socketio.sleep(random.uniform(0.5, 2.0))
+        trigger_xiaoyu_reply(c, uid, rm)
+
+    socketio.start_background_task(_reply)
+
+
+@app.route("/api/xiaoyu/history", methods=["GET"])
+def get_xiaoyu_history():
+    user = _require_auth()
+    if not user: return jsonify({"error": "未登录"}), 401
+    db = get_mdb()
+    rows = list(db["xiaoyu_messages"].find(
+        {"user_id": user["user_id"]}, sort=[("timestamp", -1)], limit=50
+    ))
+    rows.reverse()
+    return jsonify({"history": [
+        {"sender": m["sender"], "content": m.get("content", ""),
+         "timestamp": str(m.get("timestamp", ""))}
+        for m in rows
+    ]})
+
+
+# ══════════════════════════════════════════════════════════════
+
 # 🌟 修复点：底部代码被精简，确保多线程和服务器只启动一次
 threading.Thread(target=proactive_talker_thread, daemon=True).start()
 threading.Thread(target=memory_manager, daemon=True).start()
 threading.Thread(target=cleanup_temp_files, daemon=True).start()
+threading.Thread(target=xiaoyu_proactive_thread, daemon=True).start()
 
 if __name__ == "__main__":
     port = int(os.getenv("PORT", 5001))
