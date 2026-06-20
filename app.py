@@ -595,26 +595,39 @@ def generate_audio_url(text, role):
         return ""
 
 def generate_image_url(prompt):
-    """图片生成：硅基流动 Kwai-Kolors/Kolors（免费）"""
+    """图片生成：硅基流动 FLUX.1-schnell（免费）"""
     if not SILICONFLOW_API_KEY: return ""
+    from eventlet import tpool
     try:
-        print(f"[Image] SiliconFlow Kolors: {prompt[:60]}...", flush=True)
-        from eventlet import tpool
+        print(f"[Image] SiliconFlow FLUX.1-schnell: {prompt[:60]}...", flush=True)
+        headers = {"Authorization": f"Bearer {SILICONFLOW_API_KEY}",
+                   "Content-Type": "application/json"}
+        payload = {
+            "model": "black-forest-labs/FLUX.1-schnell",
+            "prompt": prompt,
+            "image_size": "1024x1024",
+            "batch_size": 1,
+            "num_inference_steps": 4,
+        }
 
-        def _call_image():
-            return client_sf.images.generate(
-                model="Kwai-Kolors/Kolors",
-                prompt=prompt,
-                n=1,
-                image_size="1024x1024",
-            )
+        def _call():
+            return requests.post("https://api.siliconflow.cn/v1/images/generations",
+                                 headers=headers, json=payload, timeout=60)
+        resp = tpool.execute(_call)
+        if resp.status_code != 200:
+            print(f"[Image] API Error {resp.status_code}: {resp.text[:300]}", flush=True)
+            return ""
 
-        response = tpool.execute(_call_image)
-        url = response.data[0].url if response.data else ""
-        if not url: return ""
+        res = resp.json()
+        # 硅基流动返回格式：{"images": [{"url": "..."}]}
+        images = res.get("images") or res.get("data") or []
+        url = images[0].get("url", "") if images else ""
+        if not url:
+            print(f"[Image] No url in response: {str(res)[:300]}", flush=True)
+            return ""
 
-        # 下载保存到本地（远端 URL 可能临时失效）
-        img_resp = requests.get(url, timeout=30)
+        # 下载保存到本地
+        img_resp = tpool.execute(lambda: requests.get(url, timeout=30))
         if img_resp.status_code == 200:
             filename = f"img_{uuid.uuid4()}.png"
             filepath = os.path.join("static", "uploads", filename)
@@ -626,6 +639,7 @@ def generate_image_url(prompt):
         return url
     except Exception as e:
         print(f"[Image] Exception: {e}", flush=True)
+        traceback.print_exc()
         return ""
 
 
@@ -1467,53 +1481,21 @@ def upload_image():
                             ".gif": "image/gif", ".webp": "image/webp", ".bmp": "image/bmp"}
                 mime = mime_map.get(ext, "image/jpeg")
 
-                headers = {
-                    "Authorization": f"Bearer {DASHSCOPE_API_KEY}",
-                    "Content-Type": "application/json"
-                }
-
-                # Use Qwen-VL-Max via DashScope Multimodal Generation API
-                payload = {
-                    "model": "qwen3.5-omni-plus",
-                    "input": {
-                        "messages": [
-                            {
-                                "role": "user",
-                                "content": [
-                                    {"image": f"data:{mime};base64,{base64_image}"},
-                                    {"text": "请简要描述这张图片的内容，包括主要物体、场景和氛围。"}
-                                ]
-                            }
+                # 使用硅基流动 Qwen2.5-VL 视觉模型（OpenAI 兼容格式）
+                print("[Vision] Calling SiliconFlow Qwen2.5-VL-7B-Instruct...", flush=True)
+                vision_resp = client_sf.chat.completions.create(
+                    model="Qwen/Qwen2.5-VL-7B-Instruct",
+                    messages=[{
+                        "role": "user",
+                        "content": [
+                            {"type": "image_url", "image_url": {"url": f"data:{mime};base64,{base64_image}"}},
+                            {"type": "text", "text": "请简要描述这张图片的内容，包括主要物体、场景和氛围。"}
                         ]
-                    }
-                }
-                
-                print("[Vision] Calling qwen3.5-omni-plus...", flush=True)
-                resp = requests.post(
-                    "https://dashscope.aliyuncs.com/api/v1/services/aigc/multimodal-generation/generation",
-                    headers=headers,
-                    json=payload,
-                    timeout=60
+                    }],
+                    max_tokens=200
                 )
-                
-                if resp.status_code == 200:
-                    res_json = resp.json()
-                    if "output" in res_json and "choices" in res_json["output"]:
-                        # Qwen-VL output format might differ slightly, let's check
-                        # Usually choices[0].message.content is a list or string. 
-                        # For multimodal, content is list of dicts.
-                        # Wait, for VL output, it might be just text in content.
-                        # Let's handle both.
-                        content = res_json["output"]["choices"][0]["message"]["content"]
-                        if isinstance(content, list):
-                            description = "".join([c.get("text", "") for c in content])
-                        else:
-                            description = str(content)
-                        print(f"[Vision] Description: {description}", flush=True)
-                    else:
-                        print(f"[Vision] API Error: {res_json}", flush=True)
-                else:
-                     print(f"[Vision] HTTP Error: {resp.status_code} - {resp.text}", flush=True)
+                description = (vision_resp.choices[0].message.content or "").strip()
+                print(f"[Vision] Description: {description}", flush=True)
             except Exception as e:
                 print(f"[Vision] Processing Failed: {e}", flush=True)
                 traceback.print_exc()
@@ -1530,75 +1512,73 @@ def upload_image():
 
 @app.route("/api/voice_to_text", methods=["POST"])
 def voice_to_text():
-    """
-    接收音频文件，调用 Qwen3.5-Omni-Plus STT 转文字
-    """
+    """接收音频，转 wav 后调用硅基流动 SenseVoiceSmall 转文字"""
     if 'audio' not in request.files:
         return jsonify({"ok": False, "error": "No audio file"}), 400
 
     file = request.files['audio']
     original_filename = file.filename or "recording.webm"
+    from eventlet import tpool
 
+    filepath = None
+    convert_path = None
     try:
         start_time = time.time()
         print(f"[STT] Start processing: {file.filename}", flush=True)
 
-        # Save temp file
+        # 1. 保存原始上传文件
         ext = os.path.splitext(original_filename)[1] or ".webm"
         filename = f"voice_{uuid.uuid4()}{ext}"
         temp_dir = os.path.join("static", "temp_audio")
         os.makedirs(temp_dir, exist_ok=True)
         filepath = os.path.join(temp_dir, filename)
-        from eventlet import tpool
         tpool.execute(file.save, filepath)
 
-        audio_url_path = f"/static/temp_audio/{filename}"
-
-        # Convert to 16kHz mono WAV if needed
+        # 2. 转 16kHz 单声道 wav（SenseVoice 不支持 webm）
         convert_path = filepath
         if ext.lower() != ".wav":
+            wav_path = os.path.splitext(filepath)[0] + ".wav"
             try:
-                wav_path = os.path.splitext(filepath)[0] + ".wav"
                 ffmpeg_exe = imageio_ffmpeg.get_ffmpeg_exe()
                 print(f"[STT] Converting to WAV...", flush=True)
-                subprocess.run(
+                result = tpool.execute(lambda: subprocess.run(
                     [ffmpeg_exe, "-y", "-i", filepath, "-ar", "16000", "-ac", "1", wav_path],
                     stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=30
-                )
-                convert_path = wav_path
+                ))
+                if os.path.exists(wav_path) and os.path.getsize(wav_path) > 0:
+                    convert_path = wav_path
+                else:
+                    print(f"[STT] Conversion produced no file, using original", flush=True)
             except Exception as e:
                 print(f"[STT] Conversion failed (using original): {e}", flush=True)
 
-        # Read audio and base64 encode
-        with open(convert_path, "rb") as af:
-            audio_b64 = base64.b64encode(af.read()).decode("utf-8")
+        # 3. 调用硅基流动 SenseVoiceSmall
+        print(f"[STT] SiliconFlow SenseVoiceSmall on {convert_path}...", flush=True)
 
-        # Clean up temp files
-        try:
-            os.remove(filepath)
-            if convert_path != filepath:
-                os.remove(convert_path)
-        except Exception:
-            pass
-
-        # 硅基流动 SenseVoiceSmall 语音识别
-        print(f"[STT] SiliconFlow SenseVoiceSmall...", flush=True)
-        with open(convert_path, "rb") as af:
-            transcription = client_sf.audio.transcriptions.create(
-                model="FunAudioLLM/SenseVoiceSmall",
-                file=af,
-            )
+        def _call_stt():
+            with open(convert_path, "rb") as af:
+                return client_sf.audio.transcriptions.create(
+                    model="FunAudioLLM/SenseVoiceSmall",
+                    file=(os.path.basename(convert_path), af),
+                )
+        transcription = tpool.execute(_call_stt)
         text = (transcription.text or "").strip()
         print(f"[STT] Result in {time.time()-start_time:.2f}s: {text[:100]}", flush=True)
 
         if text:
-            return jsonify({"ok": True, "text": text, "url": audio_url_path, "meta": {}})
-        return jsonify({"ok": False, "error": "No text extracted", "url": audio_url_path, "meta": {}}), 500
+            return jsonify({"ok": True, "text": text, "meta": {}})
+        return jsonify({"ok": False, "error": "未识别到文字内容", "meta": {}}), 500
 
     except Exception as e:
         print(f"[STT] Failed: {e}", flush=True)
         traceback.print_exc()
         return jsonify({"ok": False, "error": str(e)}), 500
+    finally:
+        # 调用完成后再清理临时文件
+        for p in {filepath, convert_path}:
+            if p and os.path.exists(p):
+                try: os.remove(p)
+                except Exception: pass
 
 def _clean_old_files(directory, max_age=3600):
     if not os.path.exists(directory):
