@@ -746,11 +746,40 @@ def build_cross_memory(role, user_id):
     return f"你注意到:\n群聊刚刚发生: {grp_str}\n最新朋友圈: {mom_str}\n近期私聊: {dm_str}"
 
 
+def _relative_time(ts) -> str:
+    """将 UTC datetime 转为相对时间描述，如'刚刚'、'3分钟前'、'2小时前'"""
+    if not isinstance(ts, datetime):
+        return ""
+    now = datetime.utcnow()
+    diff = (now - ts).total_seconds()
+    if diff < 60:       return "刚刚"
+    if diff < 3600:     return f"{int(diff//60)}分钟前"
+    if diff < 86400:    return f"{int(diff//3600)}小时前"
+    if diff < 172800:   return "昨天"
+    return f"{int(diff//86400)}天前"
+
+
 def build_history(user_id, limit=30):
     db = get_mdb()
     rows = list(db["messages"].find({"user_id": user_id}, sort=[("timestamp", -1)], limit=limit))
     rows.reverse()
-    return "\n".join(f"{ROLE_NAME.get(m['role'], m['role'])}：{m['content']}" for m in rows) if rows else "（暂无群聊记录）"
+    if not rows:
+        return "（暂无群聊记录）"
+    lines = []
+    prev_ts = None
+    for m in rows:
+        ts = m.get("timestamp")
+        rel = _relative_time(ts)
+        # 只在时间间隔超过15分钟时显示时间标记，避免每行都打
+        if prev_ts and ts and isinstance(ts, datetime) and isinstance(prev_ts, datetime):
+            gap = (ts - prev_ts).total_seconds()
+            if gap > 900:
+                lines.append(f"──── {rel} ────")
+        elif rel and not prev_ts:
+            lines.append(f"──── {rel} ────")
+        lines.append(f"{ROLE_NAME.get(m['role'], m['role'])}：{m['content']}")
+        prev_ts = ts
+    return "\n".join(lines)
 
 
 def build_memory_summaries(user_id):
@@ -771,8 +800,36 @@ def build_dm_history(role, user_id, limit=20):
     db = get_mdb()
     rows = list(db["dm_messages"].find({"user_id": user_id, "chat_role": role}, sort=[("timestamp", -1)], limit=limit))
     rows.reverse()
+    if not rows:
+        return "（暂无私聊记录）"
     name_map = {role: role, "INFJ": "我"}
-    return "\n".join(f"{name_map.get(m['sender'], m['sender'])}：{m['content']}" for m in rows) if rows else "（暂无私聊记录）"
+    lines = []
+    prev_ts = None
+    for m in rows:
+        ts = m.get("timestamp")
+        if prev_ts and ts and isinstance(ts, datetime) and isinstance(prev_ts, datetime):
+            gap = (ts - prev_ts).total_seconds()
+            if gap > 900:
+                lines.append(f"──── {_relative_time(ts)} ────")
+        lines.append(f"{name_map.get(m['sender'], m['sender'])}：{m['content']}")
+        prev_ts = ts
+    return "\n".join(lines)
+
+
+def _now_desc() -> str:
+    """生成当前时间的自然语言描述，注入 prompt 让 AI 有时间感"""
+    now = datetime.now()
+    weekdays = ["周一", "周二", "周三", "周四", "周五", "周六", "周日"]
+    wd = weekdays[now.weekday()]
+    h = now.hour
+    if 5 <= h < 9:    period = "早上"
+    elif 9 <= h < 12: period = "上午"
+    elif 12 <= h < 14: period = "中午"
+    elif 14 <= h < 18: period = "下午"
+    elif 18 <= h < 21: period = "晚上"
+    elif 21 <= h < 24: period = "深夜"
+    else:              period = "凌晨"
+    return f"{now.year}年{now.month}月{now.day}日 {wd} {period}{h}点"
 
 
 def make_prompt(role, mode, user_id, life_event="", is_chain=False, trigger_role="", trigger_content=""):
@@ -780,7 +837,7 @@ def make_prompt(role, mode, user_id, life_event="", is_chain=False, trigger_role
     night = "\n提示：现在是深夜，可以说一些平时不太说的话。" if role == "INFP" and (now_hour >= 23 or now_hour <= 4) else ""
     persona = PERSONA_BASE[role] + (
         f"\n额外补充：{CUSTOM_CONFIG[role]['prompt_extra']}" if CUSTOM_CONFIG[role].get("prompt_extra") else "")
-    state = f"当前状态：{mood_to_desc(role)}"
+    state = f"当前时间：{_now_desc()}\n当前状态：{mood_to_desc(role)}"
     th, cb = get_tension_hint(role, trigger_role if is_chain else ""), get_callback_hint()
     if th: state += f"\n{th}"
     if cb: state += f"\n{cb}"
@@ -838,7 +895,7 @@ def make_dm_prompt(role, user_content, user_id):
     cross_mem = build_cross_memory(role, user_id)
     img_hint = " 用户要图，请必须输出 [IMG: 画面描述]" if "照片" in user_content or "图" in user_content else (
         " 如果想发表情包或照片，请加上 [IMG: 画面描述]" if random.random() < 0.1 else "")
-    system_prompt = f"{persona}\n\n{FORMAT_RULES}"
+    system_prompt = f"{persona}\n\n当前时间：{_now_desc()}\n\n{FORMAT_RULES}"
     user_prompt = f"{cross_mem}\n\n你现在在和INFJ（我）私聊。对方刚说：「{user_content}」\n\n私聊记录：\n{history}\n\n现在的事情：\n结合上面的私聊记录甚至群聊发生的破事，自然回复他，私聊可以更走心或更直接。{img_hint}"
     return system_prompt, user_prompt
 
