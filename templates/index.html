@@ -1,0 +1,3253 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>MBTI 群聊实验室</title>
+    <script src="/static/js/socket.io.min.js"></script>
+    <script>
+    if(typeof io === 'undefined') {
+        document.write('<script src="https://cdn.socket.io/4.7.2/socket.io.min.js"><\/script>');
+    }
+    </script>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+        <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600&family=Noto+Serif+SC:wght@400;600;700&family=Noto+Sans+SC:wght@300;400;500&display=swap" rel="stylesheet">
+
+    <style>
+/* ═══════════════════════════════════════════════════════════
+   MBTI 群聊实验室 — Digital Aura v3
+   Design: Luminous dark interface, character-infused typography
+   Font: Outfit (UI numerics) + Noto Sans SC / Noto Serif SC
+   ═══════════════════════════════════════════════════════════ */
+
+:root {
+    /* ── Depth Backgrounds ── */
+    --bg:        #070810;
+    --bg2:       #0b0c18;
+    --surface:   #101221;
+    --surface2:  #171929;
+    --surface3:  #1e2035;
+    --border:    rgba(255,255,255,0.05);
+    --border2:   rgba(255,255,255,0.09);
+    --text:      #e8e9f5;
+    --text-sub:  #8a8aac;
+    --text-muted:#46466a;
+
+    /* ── Character Colors ── */
+    --enfp:  #ff8c42;
+    --infp:  #5bc8f5;
+    --entp:  #c97ef5;
+    --entj:  #ff4d4d;
+    --estj:  #00b4ad;
+    --enfj:  #ffb020;
+    --infj:  #4fd896;
+    --accent:#6c7fff;
+
+    /* ── Bubble Tints ── */
+    --tint-enfp: rgba(255,140,66,0.08);
+    --tint-infp: rgba(91,200,245,0.08);
+    --tint-entp: rgba(201,126,245,0.08);
+    --tint-entj: rgba(255,77,77,0.08);
+    --tint-estj: rgba(0,180,173,0.08);
+    --tint-enfj: rgba(255,176,32,0.08);
+    --tint-infj: rgba(79,216,150,0.08);
+
+    /* ── Border Tints ── */
+    --b-enfp: rgba(255,140,66,0.25);
+    --b-infp: rgba(91,200,245,0.25);
+    --b-entp: rgba(201,126,245,0.25);
+    --b-entj: rgba(255,77,77,0.25);
+    --b-estj: rgba(0,180,173,0.25);
+    --b-enfj: rgba(255,176,32,0.25);
+    --b-infj: rgba(79,216,150,0.25);
+
+    /* ── Glows ── */
+    --glow-enfp: rgba(255,140,66,0.30);
+    --glow-infp: rgba(91,200,245,0.30);
+    --glow-entp: rgba(201,126,245,0.30);
+    --glow-entj: rgba(255,77,77,0.30);
+    --glow-estj: rgba(0,180,173,0.30);
+    --glow-enfj: rgba(255,176,32,0.30);
+    --glow-infj: rgba(79,216,150,0.30);
+    --glow-accent: rgba(108,127,255,0.25);
+
+    /* ── Self Bubble ── */
+    --bubble-self-bg:     rgba(108,127,255,0.13);
+    --bubble-self-border: rgba(108,127,255,0.28);
+
+    /* ── Glass ── */
+    --glass:      rgba(7,8,16,0.88);
+    --glass-blur: blur(28px);
+    --sidebar-w:  276px;
+}
+
+/* ── Light Theme ── */
+body.light {
+    --bg:       #f0f1f9;
+    --bg2:      #e6e8f3;
+    --surface:  #ffffff;
+    --surface2: #eef0fa;
+    --surface3: #e3e6f5;
+    --border:   rgba(0,0,0,0.06);
+    --border2:  rgba(0,0,0,0.11);
+    --text:     #14152e;
+    --text-sub: #555577;
+    --text-muted: #9898b8;
+
+    --tint-enfp: rgba(255,140,66,0.07);
+    --tint-infp: rgba(91,200,245,0.07);
+    --tint-entp: rgba(201,126,245,0.07);
+    --tint-entj: rgba(255,77,77,0.07);
+    --tint-estj: rgba(0,180,173,0.07);
+    --tint-enfj: rgba(255,176,32,0.07);
+    --tint-infj: rgba(79,216,150,0.07);
+
+    --b-enfp: rgba(255,140,66,0.3);
+    --b-infp: rgba(91,200,245,0.3);
+    --b-entp: rgba(201,126,245,0.3);
+    --b-entj: rgba(255,77,77,0.3);
+    --b-estj: rgba(0,180,173,0.3);
+    --b-enfj: rgba(255,176,32,0.3);
+    --b-infj: rgba(79,216,150,0.3);
+
+    --bubble-self-bg:     rgba(108,127,255,0.09);
+    --bubble-self-border: rgba(108,127,255,0.25);
+    --glass:      rgba(255,255,255,0.92);
+}
+
+/* ═══════════════════════════
+   RESET & BASE
+═══════════════════════════ */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; overflow: hidden; }
+
+body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Outfit', 'Noto Sans SC', -apple-system, sans-serif;
+    font-weight: 400;
+    display: flex;
+    height: 100dvh;
+    -webkit-font-smoothing: antialiased;
+    position: relative;
+}
+
+/* ── Atmospheric Background ── */
+body::before {
+    content: '';
+    position: fixed;
+    top: -40%; right: -20%;
+    width: 70vw; height: 70vw;
+    background: radial-gradient(ellipse, rgba(108,127,255,0.055) 0%, transparent 65%);
+    pointer-events: none; z-index: 0;
+    animation: auraFloat 28s ease-in-out infinite alternate;
+}
+body::after {
+    content: '';
+    position: fixed;
+    bottom: -30%; left: -15%;
+    width: 55vw; height: 55vw;
+    background: radial-gradient(ellipse, rgba(79,216,150,0.04) 0%, transparent 65%);
+    pointer-events: none; z-index: 0;
+    animation: auraFloat 34s ease-in-out infinite alternate-reverse;
+}
+body.light::before, body.light::after { opacity: 0.35; }
+
+@keyframes auraFloat {
+    0%   { transform: translate(0, 0) scale(1); }
+    100% { transform: translate(-4%, 6%) scale(1.06); }
+}
+
+/* ── Noise Texture Overlay ── */
+#noise-overlay {
+    position: fixed; inset: 0; z-index: 0;
+    pointer-events: none;
+    opacity: 0.022;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23n)'/%3E%3C/svg%3E");
+    background-size: 200px 200px;
+}
+body.light #noise-overlay { opacity: 0.015; }
+
+/* ══════════════════════════
+   SCROLLBAR
+══════════════════════════ */
+::-webkit-scrollbar { width: 3px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.07); border-radius: 10px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.14); }
+body.light ::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.09); }
+
+/* ══════════════════════════
+   SIDEBAR
+══════════════════════════ */
+#sidebar {
+    width: var(--sidebar-w);
+    background: var(--glass);
+    backdrop-filter: var(--glass-blur);
+    -webkit-backdrop-filter: var(--glass-blur);
+    border-right: 1px solid var(--border2);
+    display: flex;
+    flex-direction: column;
+    flex-shrink: 0;
+    height: 100%;
+    position: relative;
+    z-index: 10;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+/* Top shimmer */
+#sidebar::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0; height: 220px;
+    background: linear-gradient(180deg, rgba(108,127,255,0.06) 0%, transparent 100%);
+    pointer-events: none; z-index: 0;
+}
+
+/* Bottom fade */
+#sidebar::after {
+    content: '';
+    position: absolute;
+    bottom: 0; left: 0; right: 0; height: 60px;
+    background: linear-gradient(0deg, var(--glass) 0%, transparent 100%);
+    pointer-events: none; z-index: 2;
+}
+
+#sidebar-header {
+    padding: 22px 18px 14px;
+    border-bottom: 1px solid var(--border);
+    position: relative; z-index: 1;
+    flex-shrink: 0;
+}
+
+#app-title-wrap {
+    display: flex; align-items: center; justify-content: space-between;
+}
+
+#app-title {
+    font-family: 'Noto Serif SC', serif;
+    font-size: 18px; font-weight: 700;
+    background: linear-gradient(130deg, #a0aaff 0%, #d0a0ff 55%, #a0aaff 100%);
+    background-size: 200% 100%;
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+    letter-spacing: 0.01em;
+    animation: titleShimmer 6s ease-in-out infinite;
+}
+@keyframes titleShimmer {
+    0%, 100% { background-position: 0% 50%; }
+    50%       { background-position: 100% 50%; }
+}
+
+#app-sub {
+    font-size: 10px; color: var(--text-muted);
+    margin-top: 5px; letter-spacing: 0.1em;
+    display: flex; align-items: center; gap: 7px;
+    text-transform: uppercase;
+}
+
+.status-dot {
+    width: 5px; height: 5px;
+    background: var(--infj);
+    border-radius: 50%;
+    box-shadow: 0 0 7px var(--glow-infj);
+    animation: pulseDot 2.8s ease-in-out infinite;
+    flex-shrink: 0;
+}
+@keyframes pulseDot {
+    0%, 100% { opacity: 1; transform: scale(1); box-shadow: 0 0 7px var(--glow-infj); }
+    50%       { opacity: 0.35; transform: scale(0.65); box-shadow: 0 0 3px var(--glow-infj); }
+}
+
+/* ── Theme Toggle ── */
+#theme-toggle {
+    width: 30px; height: 30px;
+    border-radius: 10px;
+    border: 1px solid var(--border2);
+    background: rgba(255,255,255,0.04);
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px; line-height: 1; flex-shrink: 0;
+    transition: background 0.2s, transform 0.3s cubic-bezier(0.34,1.56,0.64,1), border-color 0.2s;
+}
+#theme-toggle:hover {
+    background: rgba(255,255,255,0.1);
+    border-color: rgba(255,255,255,0.2);
+    transform: rotate(20deg) scale(1.1);
+}
+body.light #theme-toggle { background: rgba(0,0,0,0.04); }
+body.light #theme-toggle:hover { background: rgba(0,0,0,0.09); }
+
+/* ── Nav List ── */
+#nav-list {
+    flex: 1; overflow-y: auto;
+    padding: 10px 0 70px;
+    scrollbar-width: none; position: relative; z-index: 1;
+}
+#nav-list::-webkit-scrollbar { display: none; }
+
+/* Section labels */
+.nav-section-label {
+    font-size: 9px; letter-spacing: 0.14em; color: var(--text-muted);
+    text-transform: uppercase; padding: 8px 18px 4px;
+    font-weight: 500;
+}
+
+.nav-item {
+    display: flex; align-items: center; gap: 11px;
+    padding: 9px 12px; margin: 2px 10px;
+    cursor: pointer; border-radius: 14px;
+    transition: background 0.18s, transform 0.12s;
+    position: relative;
+}
+.nav-item:hover { background: rgba(255,255,255,0.05); }
+.nav-item:active { transform: scale(0.97); }
+
+/* Active state */
+.nav-item.active { background: rgba(108,127,255,0.09); }
+.nav-item.active::before {
+    content: '';
+    position: absolute; left: 0; top: 50%;
+    transform: translateY(-50%);
+    width: 3px; height: 52%; min-height: 16px;
+    border-radius: 0 4px 4px 0;
+    background: linear-gradient(180deg, #8899ff, #b080ff);
+    box-shadow: 0 0 12px rgba(136,153,255,0.55);
+}
+
+/* Per-character active accents */
+.nav-item#nav-group.active::before { background: linear-gradient(180deg, #8899ff, #6644bb); box-shadow: 0 0 12px rgba(108,127,255,0.55); }
+.nav-item#nav-dm-ENFP.active::before { background: linear-gradient(180deg, #ffb060, #ff7020); box-shadow: 0 0 12px var(--glow-enfp); }
+.nav-item#nav-dm-INFP.active::before { background: linear-gradient(180deg, #80d8ff, #3090d8); box-shadow: 0 0 12px var(--glow-infp); }
+.nav-item#nav-dm-ENTP.active::before { background: linear-gradient(180deg, #d8a0ff, #a040e0); box-shadow: 0 0 12px var(--glow-entp); }
+.nav-item#nav-dm-ENTJ.active::before { background: linear-gradient(180deg, #ff7070, #d03030); box-shadow: 0 0 12px var(--glow-entj); }
+.nav-item#nav-dm-ESTJ.active::before { background: linear-gradient(180deg, #40c8c0, #008880); box-shadow: 0 0 12px var(--glow-estj); }
+.nav-item#nav-dm-ENFJ.active::before { background: linear-gradient(180deg, #ffd050, #e09000); box-shadow: 0 0 12px var(--glow-enfj); }
+.nav-item#nav-moments.active::before { background: linear-gradient(180deg, #f8a0fb, #e84070); box-shadow: 0 0 12px rgba(248,80,160,0.55); }
+
+/* Active nav name */
+.nav-item.active .nav-name { color: #c8ceff; }
+body.light .nav-item.active .nav-name { color: #4060d8; }
+
+/* ── Nav Avatar ── */
+.nav-avatar {
+    width: 42px; height: 42px;
+    border-radius: 14px;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0; color: white; overflow: hidden;
+    position: relative;
+    transition: transform 0.2s cubic-bezier(0.34,1.56,0.64,1), box-shadow 0.2s;
+}
+.nav-avatar svg { width: 100%; height: 100%; display: block; }
+.nav-avatar img { width: 100%; height: 100%; object-fit: cover; }
+.nav-item:hover .nav-avatar { transform: scale(1.06); }
+.nav-item.active .nav-avatar { box-shadow: 0 4px 18px rgba(0,0,0,0.35); }
+
+.nav-info { flex: 1; min-width: 0; }
+.nav-name {
+    font-size: 13px; font-weight: 500; color: var(--text);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    transition: color 0.2s;
+}
+.nav-preview {
+    font-size: 10.5px; color: var(--text-muted);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    margin-top: 2px;
+}
+
+.nav-divider {
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--border2), transparent);
+    margin: 5px 16px;
+}
+
+/* ── Unread Badge ── */
+.unread-badge {
+    min-width: 18px; height: 18px;
+    background: linear-gradient(135deg, #ff5a78, #ff2050);
+    color: white; border-radius: 9px;
+    font-size: 10px; font-weight: 700;
+    display: flex; align-items: center; justify-content: center;
+    padding: 0 5px; flex-shrink: 0;
+    box-shadow: 0 2px 10px rgba(255,32,80,0.5);
+    animation: badgePop 0.3s cubic-bezier(0.34,1.56,0.64,1);
+}
+@keyframes badgePop { from { transform: scale(0); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+
+/* ══════════════════════════
+   MAIN CONTENT
+══════════════════════════ */
+#main {
+    flex: 1; display: flex; flex-direction: column;
+    min-width: 0; height: 100%;
+    position: relative; z-index: 1;
+    background: var(--bg);
+}
+
+.panel { display: none; flex-direction: column; height: 100%; }
+.panel.active { display: flex; }
+
+/* ── Panel-level ambient tinting ── */
+#panel-dm-ENFP { background: radial-gradient(ellipse 60% 40% at 80% 10%, rgba(255,140,66,0.03) 0%, transparent 100%); }
+#panel-dm-INFP { background: radial-gradient(ellipse 60% 40% at 80% 10%, rgba(91,200,245,0.03) 0%, transparent 100%); }
+#panel-dm-ENTP { background: radial-gradient(ellipse 60% 40% at 80% 10%, rgba(201,126,245,0.03) 0%, transparent 100%); }
+#panel-dm-ENTJ { background: radial-gradient(ellipse 60% 40% at 80% 10%, rgba(255,77,77,0.03) 0%, transparent 100%); }
+#panel-dm-ESTJ { background: radial-gradient(ellipse 60% 40% at 80% 10%, rgba(0,180,173,0.03) 0%, transparent 100%); }
+#panel-dm-ENFJ { background: radial-gradient(ellipse 60% 40% at 80% 10%, rgba(255,176,32,0.03) 0%, transparent 100%); }
+
+/* ══════════════════════════
+   CHAT HEADER
+══════════════════════════ */
+.chat-header {
+    background: var(--glass);
+    backdrop-filter: var(--glass-blur);
+    -webkit-backdrop-filter: var(--glass-blur);
+    border-bottom: 1px solid var(--border);
+    padding: 0 22px; height: 64px;
+    display: flex; align-items: center; justify-content: space-between;
+    flex-shrink: 0; position: relative;
+    z-index: 5;
+}
+
+/* Character accent line */
+#panel-group   .chat-header::after { content:''; position:absolute; bottom:0; left:0; right:0; height:1px; background: linear-gradient(90deg, transparent 0%, rgba(108,127,255,0.45) 50%, transparent 100%); }
+#panel-dm-ENFP .chat-header::after { content:''; position:absolute; bottom:0; left:0; right:0; height:1px; background: linear-gradient(90deg, transparent 0%, var(--b-enfp) 50%, transparent 100%); }
+#panel-dm-INFP .chat-header::after { content:''; position:absolute; bottom:0; left:0; right:0; height:1px; background: linear-gradient(90deg, transparent 0%, var(--b-infp) 50%, transparent 100%); }
+#panel-dm-ENTP .chat-header::after { content:''; position:absolute; bottom:0; left:0; right:0; height:1px; background: linear-gradient(90deg, transparent 0%, var(--b-entp) 50%, transparent 100%); }
+#panel-dm-ENTJ .chat-header::after { content:''; position:absolute; bottom:0; left:0; right:0; height:1px; background: linear-gradient(90deg, transparent 0%, var(--b-entj) 50%, transparent 100%); }
+#panel-dm-ESTJ .chat-header::after { content:''; position:absolute; bottom:0; left:0; right:0; height:1px; background: linear-gradient(90deg, transparent 0%, var(--b-estj) 50%, transparent 100%); }
+#panel-dm-ENFJ .chat-header::after { content:''; position:absolute; bottom:0; left:0; right:0; height:1px; background: linear-gradient(90deg, transparent 0%, var(--b-enfj) 50%, transparent 100%); }
+
+.chat-header-left  { display: flex; align-items: center; gap: 13px; }
+.chat-header-right { display: flex; align-items: center; gap: 8px; }
+
+.chat-header-avatar {
+    width: 38px; height: 38px;
+    border-radius: 13px;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0; overflow: hidden;
+    position: relative;
+}
+.chat-header-avatar svg { width: 100%; height: 100%; display: block; }
+.chat-header-avatar img { width: 100%; height: 100%; object-fit: cover; }
+.chat-header-avatar.group { box-shadow: 0 3px 14px rgba(108,127,255,0.38); }
+.chat-header-avatar.ENFP  { box-shadow: 0 3px 14px var(--glow-enfp); }
+.chat-header-avatar.INFP  { box-shadow: 0 3px 14px var(--glow-infp); }
+.chat-header-avatar.ENTP  { box-shadow: 0 3px 14px var(--glow-entp); }
+.chat-header-avatar.ENTJ  { box-shadow: 0 3px 14px var(--glow-entj); }
+.chat-header-avatar.ESTJ  { box-shadow: 0 3px 14px var(--glow-estj); }
+.chat-header-avatar.ENFJ  { box-shadow: 0 3px 14px var(--glow-enfj); }
+
+.chat-header-name {
+    font-size: 14px; font-weight: 600;
+    color: var(--text); letter-spacing: 0.01em;
+}
+.chat-header-sub {
+    font-size: 10px; color: var(--text-muted);
+    margin-top: 2px; letter-spacing: 0.05em;
+}
+
+#typing-bar, [id^="typing-bar-"] {
+    font-size: 10px; color: var(--text-muted);
+    min-width: 80px; text-align: right; letter-spacing: 0.02em;
+}
+[class="visible"], #typing-bar.visible, [id^="typing-bar-"].visible {
+    animation: pulseText 1.6s ease-in-out infinite;
+    color: var(--infj);
+}
+@keyframes pulseText { 0%,100%{opacity:1} 50%{opacity:0.25} }
+
+/* ── Icon Button ── */
+.icon-btn {
+    width: 33px; height: 33px; border-radius: 10px;
+    border: 1px solid var(--border2);
+    background: rgba(255,255,255,0.04);
+    cursor: pointer; display: flex; align-items: center; justify-content: center;
+    color: var(--text-sub); font-size: 15px;
+    transition: background 0.16s, border-color 0.16s, transform 0.16s, color 0.16s;
+}
+.icon-btn:hover {
+    background: rgba(255,255,255,0.09);
+    border-color: rgba(255,255,255,0.2);
+    color: var(--text); transform: scale(1.06);
+}
+body.light .icon-btn { background: rgba(0,0,0,0.04); }
+body.light .icon-btn:hover { background: rgba(0,0,0,0.08); }
+
+/* ══════════════════════════
+   CHAT WINDOW
+══════════════════════════ */
+.chat-window {
+    flex: 1; overflow-y: auto;
+    padding: 32px 32px 18px;
+    display: flex; flex-direction: column;
+    scroll-behavior: smooth;
+    background: transparent;
+    -webkit-overflow-scrolling: touch;
+    min-height: 0;
+}
+
+.date-divider {
+    text-align: center; font-size: 9.5px; color: var(--text-muted);
+    margin: 0 0 28px; position: relative;
+    letter-spacing: 0.14em; text-transform: uppercase;
+}
+.date-divider::before, .date-divider::after {
+    content: ''; position: absolute; top: 50%;
+    height: 1px; width: 40%;
+}
+.date-divider::before { left: 0;  background: linear-gradient(90deg, transparent, var(--border2)); }
+.date-divider::after  { right: 0; background: linear-gradient(270deg, transparent, var(--border2)); }
+
+/* ── Message Groups ── */
+.msg-group { display: flex; gap: 10px; align-items: flex-start; margin-bottom: 20px; }
+.msg-group.self { flex-direction: row-reverse; }
+.msg-group.same-sender { margin-top: -12px; }
+
+.msg-avatar {
+    width: 36px; height: 36px; border-radius: 12px;
+    flex-shrink: 0; display: flex; align-items: center; justify-content: center;
+    overflow: hidden; position: relative; top: 2px;
+    transition: box-shadow 0.2s;
+}
+.msg-avatar img { width: 100%; height: 100%; object-fit: cover; }
+.msg-avatar svg { width: 100%; height: 100%; display: block; }
+
+.msg-avatar.ENFP { box-shadow: 0 2px 12px var(--glow-enfp); }
+.msg-avatar.INFP { box-shadow: 0 2px 12px var(--glow-infp); }
+.msg-avatar.ENTP { box-shadow: 0 2px 12px var(--glow-entp); }
+.msg-avatar.ENTJ { box-shadow: 0 2px 12px var(--glow-entj); }
+.msg-avatar.ESTJ { box-shadow: 0 2px 12px var(--glow-estj); }
+.msg-avatar.ENFJ { box-shadow: 0 2px 12px var(--glow-enfj); }
+.msg-avatar.INFJ { box-shadow: 0 2px 12px var(--glow-infj); }
+.msg-avatar.phantom { visibility: hidden; box-shadow: none; }
+
+.bubble-col {
+    display: flex; flex-direction: column; gap: 3px;
+    max-width: 62%;
+}
+.self .bubble-col { align-items: flex-end; }
+
+.msg-sender {
+    font-size: 10px; color: var(--text-muted);
+    margin-bottom: 4px; padding-left: 4px;
+    letter-spacing: 0.05em;
+}
+.self .msg-sender { display: none; }
+
+/* ── Bubbles ── */
+.bubble {
+    padding: 11px 16px;
+    border-radius: 20px; border-top-left-radius: 5px;
+    font-size: 13.5px; line-height: 1.78; word-break: break-word;
+    background: var(--surface2); color: var(--text);
+    border: 1px solid var(--border);
+    box-shadow: 0 2px 12px rgba(0,0,0,0.2);
+    opacity: 0; transform: translateY(8px) scale(0.99);
+    animation: bubbleIn 0.24s cubic-bezier(0.22,0.61,0.36,1) forwards;
+    position: relative;
+}
+.bubble.no-anim { animation: none; opacity: 1; transform: none; }
+@keyframes bubbleIn { to { opacity: 1; transform: translateY(0) scale(1); } }
+
+.bubble img {
+    max-width: 200px; min-height: 100px;
+    border-radius: 12px; margin-top: 6px;
+    display: block; cursor: zoom-in;
+    background: rgba(255,255,255,0.04);
+}
+
+/* Self bubble */
+.self .bubble {
+    background: var(--bubble-self-bg);
+    border-color: var(--bubble-self-border);
+    border-radius: 20px; border-top-right-radius: 5px;
+    box-shadow: 0 2px 16px rgba(108,127,255,0.18);
+}
+
+/* Per-character tints */
+.msg-group:has(.msg-avatar.ENFP):not(.self) .bubble { background: var(--tint-enfp); border-color: var(--b-enfp); }
+.msg-group:has(.msg-avatar.INFP):not(.self) .bubble { background: var(--tint-infp); border-color: var(--b-infp); }
+.msg-group:has(.msg-avatar.ENTP):not(.self) .bubble { background: var(--tint-entp); border-color: var(--b-entp); }
+.msg-group:has(.msg-avatar.ENTJ):not(.self) .bubble { background: var(--tint-entj); border-color: var(--b-entj); }
+.msg-group:has(.msg-avatar.ESTJ):not(.self) .bubble { background: var(--tint-estj); border-color: var(--b-estj); }
+.msg-group:has(.msg-avatar.ENFJ):not(.self) .bubble { background: var(--tint-enfj); border-color: var(--b-enfj); }
+
+/* ══════════════════════════
+   INPUT AREA
+══════════════════════════ */
+.input-area {
+    background: var(--glass);
+    backdrop-filter: var(--glass-blur);
+    -webkit-backdrop-filter: var(--glass-blur);
+    border-top: 1px solid var(--border);
+    padding: 13px 16px;
+    display: flex; align-items: center; gap: 9px;
+    flex-shrink: 0;
+    position: relative;
+    z-index: 5;
+}
+body.light .input-area { background: rgba(255,255,255,0.94); }
+
+.upload-btn, .dm-upload-btn {
+    width: 35px; height: 35px;
+    display: flex; align-items: center; justify-content: center;
+    background: var(--surface3); border: 1px solid var(--border2);
+    border-radius: 12px; cursor: pointer; color: var(--text-muted);
+    font-size: 16px; transition: all 0.2s; flex-shrink: 0;
+}
+.upload-btn:hover, .dm-upload-btn:hover {
+    background: rgba(108,127,255,0.12);
+    color: var(--accent); border-color: rgba(108,127,255,0.4);
+    transform: scale(1.08);
+}
+
+.dm-upload-file { display: none; }
+
+.input-wrap {
+    flex: 1; display: flex; align-items: center;
+    background: var(--surface2);
+    border: 1px solid var(--border2);
+    border-radius: 24px; padding: 0 16px;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+.input-wrap:focus-within {
+    border-color: rgba(108,127,255,0.4);
+    box-shadow: 0 0 0 3px rgba(108,127,255,0.08), 0 2px 12px rgba(108,127,255,0.1);
+}
+
+.msg-input {
+    flex: 1; background: transparent; border: none; outline: none;
+    font-family: 'Outfit', 'Noto Sans SC', sans-serif;
+    font-size: 13.5px; font-weight: 400; color: var(--text);
+    padding: 11px 0;
+}
+.msg-input::placeholder { color: var(--text-muted); }
+
+.send-btn {
+    flex-shrink: 0;
+    background: linear-gradient(135deg, #7c8fff 0%, #5242ee 100%);
+    color: #fff; border: none;
+    border-radius: 24px; padding: 10px 22px;
+    font-family: 'Outfit', 'Noto Sans SC', sans-serif;
+    font-size: 13px; font-weight: 500;
+    cursor: pointer; letter-spacing: 0.04em;
+    transition: opacity 0.15s, transform 0.14s, box-shadow 0.2s;
+    box-shadow: 0 4px 18px rgba(108,127,255,0.38);
+}
+.send-btn:hover {
+    opacity: 0.9; transform: translateY(-1px);
+    box-shadow: 0 6px 24px rgba(108,127,255,0.52);
+}
+.send-btn:active { transform: scale(0.95); }
+body.light .send-btn { background: linear-gradient(135deg, #6070f0, #4848d8); }
+
+/* ── Voice Button ── */
+#voice-btn-group, .dm-voice-btn {
+    width: 35px; height: 35px; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    background: var(--surface3); border: 1px solid var(--border2);
+    border-radius: 12px; cursor: pointer; color: var(--text-muted);
+    font-size: 17px; transition: all 0.2s;
+    user-select: none; -webkit-user-select: none; -webkit-touch-callout: none;
+}
+#voice-btn-group:hover, .dm-voice-btn:hover {
+    background: rgba(79,216,150,0.1);
+    color: var(--infj); border-color: rgba(79,216,150,0.38);
+    transform: scale(1.08);
+}
+
+/* ══════════════════════════
+   VOICE BUBBLE
+══════════════════════════ */
+.voice-bubble {
+    display: flex; align-items: center; gap: 9px;
+    min-width: 80px; max-width: 200px;
+    cursor: pointer; user-select: none;
+    padding: 7px 12px;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.09);
+    border-radius: 14px;
+    transition: background 0.16s, transform 0.12s;
+}
+.voice-bubble:hover { background: rgba(255,255,255,0.08); transform: translateY(-1px); }
+.self .voice-bubble {
+    background: rgba(108,127,255,0.11);
+    border-color: rgba(108,127,255,0.24);
+    flex-direction: row-reverse;
+}
+.self .voice-bubble:hover { background: rgba(108,127,255,0.17); }
+
+.voice-icon {
+    width: 20px; height: 20px; flex-shrink: 0;
+    background-repeat: no-repeat; background-position: center; background-size: contain;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%238a8aac' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z'/%3E%3Cpath d='M19 10v2a7 7 0 0 1-14 0v-2'/%3E%3Cline x1='12' y1='19' x2='12' y2='23'/%3E%3Cline x1='8' y1='23' x2='16' y2='23'/%3E%3C/svg%3E");
+    opacity: 0.72; transition: opacity 0.2s;
+}
+.self .voice-icon {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%238899ff' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z'/%3E%3Cpath d='M19 10v2a7 7 0 0 1-14 0v-2'/%3E%3Cline x1='12' y1='19' x2='12' y2='23'/%3E%3Cline x1='8' y1='23' x2='16' y2='23'/%3E%3C/svg%3E");
+    opacity: 0.9;
+}
+
+.voice-duration {
+    font-size: 12px; color: var(--text-sub); font-weight: 500;
+    min-width: 20px; font-variant-numeric: tabular-nums;
+}
+.self .voice-duration { color: rgba(136,153,255,0.9); }
+
+.voice-bubble.playing .voice-icon { animation: micPulse 0.85s ease-in-out infinite; opacity: 1; }
+@keyframes micPulse { 0%,100%{transform:scale(1);opacity:0.65} 50%{transform:scale(1.18);opacity:1} }
+
+.voice-dot {
+    width: 5px; height: 5px;
+    background: #ff5555; border-radius: 50%;
+    position: absolute; top: -2px; right: -8px;
+}
+.self .voice-dot { display: none; }
+
+.voice-convert-btn {
+    font-size: 10px; color: var(--text-muted);
+    border: 1px solid var(--border2); border-radius: 6px;
+    padding: 2px 6px; margin-left: 4px; cursor: pointer;
+    opacity: 0.55; transition: opacity 0.2s, background 0.15s, transform 0.12s;
+    white-space: nowrap; background: transparent;
+}
+.voice-convert-btn:hover { opacity: 1; background: rgba(255,255,255,0.08); transform: translateY(-1px); }
+.self .voice-convert-btn {
+    margin-left: 0; margin-right: 4px;
+    color: rgba(255,255,255,0.65); border-color: rgba(255,255,255,0.2);
+}
+
+/* ── Image Loading ── */
+.img-loading {
+    display: flex; align-items: center; justify-content: center;
+    width: 200px; height: 160px;
+    background: rgba(255,255,255,0.04);
+    border-radius: 12px; margin-top: 6px;
+    color: var(--text-muted); font-size: 12px;
+}
+.img-loading::after { content: '✨ 绘图中...'; animation: pulseText 1.6s infinite; }
+
+/* ══════════════════════════
+   MOMENTS PANEL
+══════════════════════════ */
+#panel-moments { height: 100%; overflow: hidden; position: relative; }
+
+.moments-header {
+    background: var(--glass);
+    backdrop-filter: var(--glass-blur);
+    -webkit-backdrop-filter: var(--glass-blur);
+    border-bottom: 1px solid var(--border);
+    padding: 0 24px; height: 64px;
+    display: flex; align-items: center; justify-content: space-between;
+    flex-shrink: 0;
+    position: absolute; top: 0; left: 0; right: 0; z-index: 10;
+}
+body.light .moments-header { background: rgba(255,255,255,0.92); }
+
+.moments-header-title {
+    font-family: 'Noto Serif SC', serif;
+    font-size: 16px; font-weight: 600;
+    background: linear-gradient(130deg, #e8a0ff, #a0b8ff);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+}
+
+.moments-scroll-area {
+    flex: 1; overflow-y: auto;
+    background: var(--bg);
+    padding-top: 64px;
+}
+
+.moments-cover {
+    position: relative; height: 240px;
+    background: linear-gradient(135deg, #12132a 0%, #0a0b1c 100%);
+    background-image: url('https://images.unsplash.com/photo-1493246507139-91e8fad9978e?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80');
+    background-size: cover; background-position: center;
+    display: flex; align-items: flex-end; justify-content: flex-end;
+    padding: 0 26px; margin-bottom: 36px;
+}
+.moments-cover::after {
+    content: ''; position: absolute; inset: 0;
+    background: linear-gradient(180deg, rgba(0,0,0,0.08) 0%, rgba(0,0,0,0.65) 100%);
+}
+
+.my-profile {
+    display: flex; align-items: flex-start; gap: 14px;
+    transform: translateY(22px); z-index: 2;
+}
+.my-name {
+    color: #fff; font-weight: 600; font-size: 15px;
+    text-shadow: 0 2px 8px rgba(0,0,0,0.7);
+    margin-bottom: 28px;
+}
+.my-avatar-wrap {
+    width: 68px; height: 68px; border-radius: 16px;
+    padding: 3px;
+    background: rgba(255,255,255,0.12);
+    box-shadow: 0 6px 24px rgba(0,0,0,0.45);
+    display: flex; align-items: center; justify-content: center;
+    backdrop-filter: blur(6px);
+}
+.my-avatar-wrap svg, .my-avatar-wrap img {
+    width: 100%; height: 100%;
+    border-radius: 13px; display: block; object-fit: cover;
+}
+
+#moments-list { padding: 0 22px 32px; }
+
+.moment-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 20px 22px 18px;
+    margin-bottom: 12px;
+    transition: border-color 0.25s, transform 0.22s, box-shadow 0.25s;
+    position: relative; overflow: hidden;
+}
+/* Color left strip */
+.moment-card::before {
+    content: ''; position: absolute; left: 0; top: 0; bottom: 0;
+    width: 3px; border-radius: 20px 0 0 20px;
+}
+.moment-card[data-role="ENFP"]::before { background: var(--enfp); box-shadow: 3px 0 12px var(--glow-enfp); }
+.moment-card[data-role="INFP"]::before { background: var(--infp); box-shadow: 3px 0 12px var(--glow-infp); }
+.moment-card[data-role="ENTP"]::before { background: var(--entp); box-shadow: 3px 0 12px var(--glow-entp); }
+.moment-card[data-role="ENTJ"]::before { background: var(--entj); box-shadow: 3px 0 12px var(--glow-entj); }
+.moment-card[data-role="ESTJ"]::before { background: var(--estj); box-shadow: 3px 0 12px var(--glow-estj); }
+.moment-card[data-role="ENFJ"]::before { background: var(--enfj); box-shadow: 3px 0 12px var(--glow-enfj); }
+
+.moment-card:hover {
+    border-color: var(--border2);
+    transform: translateY(-2px);
+    box-shadow: 0 12px 40px rgba(0,0,0,0.3);
+}
+
+.moment-header { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; }
+.moment-avatar {
+    width: 46px; height: 46px; border-radius: 14px;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0; overflow: hidden;
+}
+.moment-avatar svg { width: 100%; height: 100%; display: block; }
+.moment-avatar img { width: 100%; height: 100%; object-fit: cover; border-radius: 14px; }
+.moment-avatar.ENFP { box-shadow: 0 3px 14px var(--glow-enfp); }
+.moment-avatar.INFP { box-shadow: 0 3px 14px var(--glow-infp); }
+.moment-avatar.ENTP { box-shadow: 0 3px 14px var(--glow-entp); }
+.moment-avatar.ENTJ { box-shadow: 0 3px 14px var(--glow-entj); }
+.moment-avatar.ESTJ { box-shadow: 0 3px 14px var(--glow-estj); }
+.moment-avatar.ENFJ { box-shadow: 0 3px 14px var(--glow-enfj); }
+
+.moment-meta { flex: 1; }
+.moment-name { font-size: 13px; font-weight: 600; color: var(--text); }
+.moment-time { font-size: 10px; color: var(--text-muted); margin-top: 3px; letter-spacing: 0.04em; }
+
+.moment-content {
+    font-size: 13.5px; line-height: 1.85;
+    color: var(--text-sub); margin-bottom: 16px;
+}
+.moment-image {
+    width: 100%; max-height: 380px; min-height: 180px;
+    object-fit: cover; border-radius: 13px;
+    margin-top: 10px; cursor: zoom-in;
+    background: rgba(255,255,255,0.04);
+}
+
+.moment-actions {
+    display: flex; align-items: center; gap: 8px;
+    padding-top: 14px; border-top: 1px solid var(--border);
+}
+
+.action-btn {
+    display: flex; align-items: center; gap: 6px;
+    cursor: pointer; font-size: 12px; color: var(--text-muted);
+    padding: 5px 14px; border-radius: 20px;
+    border: 1px solid var(--border2);
+    background: rgba(255,255,255,0.03);
+    transition: all 0.18s; font-family: 'Outfit', 'Noto Sans SC', sans-serif;
+}
+.action-btn:hover {
+    background: rgba(255,255,255,0.07);
+    border-color: rgba(255,255,255,0.18);
+    color: var(--text); transform: translateY(-1px);
+}
+.action-btn.liked {
+    background: rgba(255,80,80,0.09);
+    border-color: rgba(255,80,80,0.3);
+    color: #ff6b6b;
+}
+.action-btn .icon { font-size: 13px; transition: transform 0.22s cubic-bezier(0.34,1.56,0.64,1); }
+.action-btn:hover .icon { transform: scale(1.22); }
+
+.like-names { font-size: 11px; color: rgba(108,127,255,0.75); margin-left: 6px; flex: 1; }
+
+.comment-section {
+    margin-top: 12px;
+    background: rgba(0,0,0,0.14);
+    border-radius: 12px; padding: 10px 14px;
+    display: none;
+}
+.comment-section.has-comments { display: block; }
+.comment-input-area { display: none; margin-top: 10px; }
+.comment-input-area.visible { display: flex; gap: 8px; }
+.comment-input {
+    flex: 1; background: var(--bg);
+    border: 1px solid var(--border2); border-radius: 16px;
+    padding: 7px 13px; font-size: 13px; color: var(--text); outline: none;
+    transition: border-color 0.2s;
+    font-family: 'Outfit', 'Noto Sans SC', sans-serif;
+}
+.comment-input:focus { border-color: rgba(108,127,255,0.4); }
+.comment-submit {
+    font-size: 12px; padding: 5px 14px;
+    background: var(--accent); color: white;
+    border: none; border-radius: 14px; cursor: pointer;
+    transition: opacity 0.15s, transform 0.12s;
+}
+.comment-submit:hover { opacity: 0.85; transform: translateY(-1px); }
+
+.comment-list { display: flex; flex-direction: column; gap: 7px; }
+.comment-item { font-size: 12.5px; line-height: 1.65; color: var(--text-sub); }
+.comment-role { font-weight: 600; margin-right: 4px; }
+.comment-role.我    { color: var(--infj); }
+.comment-role.ENFP { color: var(--enfp); }
+.comment-role.INFP { color: var(--infp); }
+.comment-role.ENTP { color: var(--entp); }
+.comment-role.ENTJ { color: var(--entj); }
+.comment-role.ESTJ { color: var(--estj); }
+.comment-role.ENFJ { color: var(--enfj); }
+
+.moments-gen-btn {
+    display: flex; align-items: center; justify-content: center;
+    gap: 8px; margin: 0 auto 22px;
+    padding: 10px 28px;
+    background: rgba(108,127,255,0.05);
+    border: 1px dashed rgba(108,127,255,0.25);
+    border-radius: 26px;
+    font-size: 12px; color: var(--text-muted);
+    cursor: pointer; font-family: 'Outfit', 'Noto Sans SC', sans-serif;
+    transition: all 0.22s;
+}
+.moments-gen-btn:hover {
+    background: rgba(108,127,255,0.12);
+    border-color: rgba(108,127,255,0.52);
+    color: #a0aaff; transform: translateY(-1px);
+}
+
+.moments-empty {
+    text-align: center; padding: 80px 20px;
+    color: var(--text-muted); font-size: 13px;
+}
+.moments-empty .emoji { font-size: 36px; margin-bottom: 14px; filter: grayscale(0.15); }
+
+/* ══════════════════════════
+   @ MENTION LIST
+══════════════════════════ */
+#mention-list {
+    position: absolute; bottom: 72px; left: 18px;
+    background: var(--surface);
+    backdrop-filter: var(--glass-blur);
+    -webkit-backdrop-filter: var(--glass-blur);
+    border: 1px solid var(--border2);
+    border-radius: 16px;
+    box-shadow: 0 16px 48px rgba(0,0,0,0.45);
+    display: none; flex-direction: column; overflow: hidden;
+    z-index: 100; min-width: 150px;
+}
+#mention-list.visible { display: flex; animation: slideUp 0.18s cubic-bezier(0.22,0.61,0.36,1); }
+@keyframes slideUp { from { opacity:0; transform:translateY(8px) scale(0.97); } to { opacity:1; transform:translateY(0) scale(1); } }
+
+.mention-item {
+    padding: 10px 16px; display: flex; align-items: center;
+    gap: 10px; cursor: pointer;
+    transition: background 0.12s;
+    font-size: 13px; color: var(--text);
+}
+.mention-item:hover, .mention-item.selected { background: rgba(108,127,255,0.12); }
+.mention-avatar { width: 24px; height: 24px; border-radius: 8px; overflow: hidden; flex-shrink: 0; }
+.mention-avatar svg { width: 100%; height: 100%; }
+
+/* ══════════════════════════
+   MODAL
+══════════════════════════ */
+#modal-overlay {
+    position: fixed; inset: 0;
+    background: rgba(3,4,12,0.72);
+    backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px);
+    z-index: 100; display: flex; align-items: center; justify-content: center;
+    opacity: 0; pointer-events: none; transition: opacity 0.28s;
+}
+#modal-overlay.open { opacity: 1; pointer-events: all; }
+body.light #modal-overlay { background: rgba(10,10,30,0.32); }
+
+#modal {
+    background: var(--surface);
+    border: 1px solid var(--border2);
+    border-radius: 24px;
+    width: 700px; max-width: calc(100vw - 32px); max-height: 88vh;
+    display: flex; flex-direction: column;
+    box-shadow: 0 48px 120px rgba(0,0,0,0.72), inset 0 1px 0 rgba(255,255,255,0.06);
+    transform: translateY(22px) scale(0.97);
+    transition: transform 0.3s cubic-bezier(0.22,0.61,0.36,1);
+    overflow: hidden;
+}
+#modal-overlay.open #modal { transform: translateY(0) scale(1); }
+
+#modal-header {
+    padding: 22px 26px 0;
+    display: flex; align-items: center; justify-content: space-between;
+    flex-shrink: 0;
+}
+#modal-title {
+    font-family: 'Noto Serif SC', serif;
+    font-size: 16px; font-weight: 600;
+    background: linear-gradient(130deg, #a0a8ff, #c890ff);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+}
+#modal-close {
+    width: 30px; height: 30px; border-radius: 9px;
+    border: 1px solid var(--border2); background: rgba(255,255,255,0.04);
+    cursor: pointer; display: flex; align-items: center; justify-content: center;
+    color: var(--text-sub); font-size: 13px;
+    transition: background 0.15s, color 0.15s, transform 0.2s cubic-bezier(0.34,1.56,0.64,1);
+}
+#modal-close:hover { background: rgba(255,255,255,0.1); color: var(--text); transform: scale(1.12) rotate(8deg); }
+
+#modal-tabs {
+    display: flex; gap: 0; padding: 18px 26px 0;
+    border-bottom: 1px solid var(--border); flex-shrink: 0;
+    overflow-x: auto; scrollbar-width: none;
+}
+#modal-tabs::-webkit-scrollbar { display: none; }
+
+.modal-tab {
+    padding: 8px 15px; font-size: 12px; color: var(--text-muted);
+    cursor: pointer; border-bottom: 2px solid transparent;
+    margin-bottom: -1px; transition: color 0.15s, border-color 0.15s;
+    letter-spacing: 0.05em; white-space: nowrap;
+    font-family: 'Outfit', sans-serif; font-weight: 500;
+}
+.modal-tab:hover { color: var(--text-sub); }
+.modal-tab.active { color: var(--text); border-bottom-color: var(--accent); }
+.modal-tab.tab-ENFP.active { color: var(--enfp); border-bottom-color: var(--enfp); }
+.modal-tab.tab-INFP.active { color: var(--infp); border-bottom-color: var(--infp); }
+.modal-tab.tab-ENTP.active { color: var(--entp); border-bottom-color: var(--entp); }
+.modal-tab.tab-ENTJ.active { color: var(--entj); border-bottom-color: var(--entj); }
+.modal-tab.tab-ESTJ.active { color: var(--estj); border-bottom-color: var(--estj); }
+.modal-tab.tab-ENFJ.active { color: var(--enfj); border-bottom-color: var(--enfj); }
+
+#modal-body { flex: 1; overflow-y: auto; padding: 24px 26px; }
+#modal-body::-webkit-scrollbar { width: 4px; }
+#modal-body::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); border-radius: 2px; }
+
+.tab-panel { display: none; }
+.tab-panel.active { display: block; animation: tabIn 0.18s ease-out; }
+@keyframes tabIn { from { opacity:0; transform:translateY(4px); } to { opacity:1; transform:translateY(0); } }
+
+.field { margin-bottom: 22px; }
+.field-label {
+    font-size: 10.5px; font-weight: 600; color: var(--text-sub);
+    letter-spacing: 0.1em; text-transform: uppercase;
+    margin-bottom: 10px; display: flex; align-items: center; gap: 6px;
+    font-family: 'Outfit', sans-serif;
+}
+.field-hint { font-size: 10px; font-weight: 400; color: var(--text-muted); margin-left: auto; letter-spacing: 0.02em; text-transform: none; }
+
+.persona-box {
+    background: var(--bg2); border: 1px solid var(--border);
+    border-radius: 12px; padding: 14px 16px;
+    font-size: 12px; line-height: 1.8; color: var(--text-muted);
+    white-space: pre-wrap; word-break: break-all;
+    max-height: 100px; overflow-y: auto;
+    transition: max-height 0.3s cubic-bezier(0.4,0,0.2,1);
+}
+.persona-box.expanded { max-height: 260px; }
+.expand-btn {
+    font-size: 10.5px; color: var(--text-muted);
+    cursor: pointer; margin-top: 6px; display: inline-block;
+    transition: color 0.15s; letter-spacing: 0.04em;
+}
+.expand-btn:hover { color: var(--text-sub); }
+
+textarea.field-input {
+    width: 100%; min-height: 84px;
+    background: var(--bg2); border: 1px solid var(--border2);
+    border-radius: 12px; padding: 12px 16px;
+    font-family: 'Noto Sans SC', sans-serif;
+    font-size: 13px; font-weight: 300; color: var(--text);
+    line-height: 1.7; resize: vertical; outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+textarea.field-input:focus {
+    border-color: rgba(108,127,255,0.4);
+    box-shadow: 0 0 0 3px rgba(108,127,255,0.07);
+}
+textarea.field-input::placeholder { color: var(--text-muted); }
+
+.slider-row { display: flex; align-items: center; gap: 14px; }
+input[type=range] {
+    flex: 1; height: 4px; -webkit-appearance: none; appearance: none;
+    background: var(--surface3); border-radius: 2px; outline: none; cursor: pointer;
+}
+input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 17px; height: 17px; border-radius: 50%;
+    background: linear-gradient(135deg, #a0aaff, #7c8fff);
+    border: 2px solid var(--surface); box-shadow: 0 2px 10px rgba(108,127,255,0.55);
+    transition: transform 0.14s cubic-bezier(0.34,1.56,0.64,1), box-shadow 0.14s;
+}
+input[type=range]::-webkit-slider-thumb:hover {
+    transform: scale(1.28);
+    box-shadow: 0 3px 18px rgba(108,127,255,0.7);
+}
+.slider-value {
+    font-size: 12px; font-weight: 500; color: var(--text-sub);
+    min-width: 40px; text-align: right; font-variant-numeric: tabular-nums;
+    font-family: 'Outfit', sans-serif;
+}
+
+.toggle-row { display: flex; align-items: center; justify-content: space-between; }
+.toggle { position: relative; width: 40px; height: 22px; }
+.toggle input { opacity: 0; width: 0; height: 0; }
+.toggle-slider {
+    position: absolute; inset: 0;
+    background: var(--surface3); border: 1px solid var(--border2);
+    border-radius: 22px; cursor: pointer;
+    transition: background 0.28s, border-color 0.28s;
+}
+.toggle-slider::before {
+    content: ''; position: absolute;
+    width: 15px; height: 15px; left: 3px; top: 3px;
+    background: var(--text-muted); border-radius: 50%;
+    transition: transform 0.28s cubic-bezier(0.34,1.56,0.64,1), background 0.28s;
+}
+.toggle input:checked + .toggle-slider { background: rgba(108,127,255,0.2); border-color: rgba(108,127,255,0.4); }
+.toggle input:checked + .toggle-slider::before {
+    transform: translateX(18px);
+    background: var(--accent);
+    box-shadow: 0 0 10px rgba(108,127,255,0.65);
+}
+
+.field-divider { border: none; border-top: 1px solid var(--border); margin: 22px 0; }
+.field-desc { font-size: 10.5px; color: var(--text-muted); margin-top: 7px; line-height: 1.55; letter-spacing: 0.02em; }
+
+#modal-footer {
+    padding: 16px 26px;
+    border-top: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: space-between;
+    flex-shrink: 0;
+    background: rgba(0,0,0,0.18);
+}
+#save-status { font-size: 11px; color: var(--text-muted); transition: color 0.3s; }
+#save-status.ok  { color: var(--infj); }
+#save-status.err { color: #ff5555; }
+
+#save-btn {
+    background: linear-gradient(135deg, #7c8fff, #5242ee); color: white;
+    border: none; border-radius: 12px; padding: 9px 24px;
+    font-family: 'Outfit', 'Noto Sans SC', sans-serif; font-size: 13px; font-weight: 500;
+    cursor: pointer; box-shadow: 0 4px 16px rgba(108,127,255,0.4);
+    transition: opacity 0.15s, transform 0.14s, box-shadow 0.2s;
+}
+#save-btn:hover { opacity: 0.88; transform: translateY(-1px); box-shadow: 0 6px 22px rgba(108,127,255,0.55); }
+#save-btn:active { transform: scale(0.96); }
+
+#reset-btn {
+    background: rgba(255,255,255,0.04); color: var(--text-muted);
+    border: 1px solid var(--border2); border-radius: 12px;
+    padding: 9px 16px; font-family: 'Outfit', 'Noto Sans SC', sans-serif;
+    font-size: 12.5px; font-weight: 400; cursor: pointer;
+    transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+#reset-btn:hover { background: rgba(255,255,255,0.08); color: var(--text-sub); border-color: var(--border2); }
+
+/* ── Spinner ── */
+.spinner {
+    display: inline-block; width: 14px; height: 14px;
+    border: 2px solid rgba(255,255,255,0.1);
+    border-top-color: var(--accent);
+    border-radius: 50%; animation: spin 0.72s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ══════════════════════════
+   HAMBURGER & OVERLAY
+══════════════════════════ */
+#hamburger {
+    display: none;
+    width: 34px; height: 34px; border-radius: 10px;
+    border: 1px solid var(--border2);
+    background: rgba(255,255,255,0.04);
+    cursor: pointer; align-items: center; justify-content: center;
+    color: var(--text-sub); font-size: 17px; flex-shrink: 0;
+    transition: background 0.15s, color 0.15s;
+}
+#hamburger:hover { background: rgba(255,255,255,0.09); color: var(--text); }
+body.light #hamburger { background: rgba(0,0,0,0.04); }
+
+#sidebar-overlay {
+    display: none; position: fixed; inset: 0; z-index: 49;
+    background: rgba(0,0,0,0.65); backdrop-filter: blur(6px);
+    opacity: 0; pointer-events: none; transition: opacity 0.3s;
+}
+#sidebar-overlay.open { opacity: 1; pointer-events: all; }
+
+/* ── Light mode overrides ── */
+body.light #app-title { background: linear-gradient(130deg, #4050d8, #9040c8); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+body.light .moments-header-title { background: linear-gradient(130deg, #7030c0, #4050d8); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+body.light #modal-title { background: linear-gradient(130deg, #5060d8, #9040c8); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+body.light .nav-item.active { background: rgba(70,90,220,0.07); }
+body.light .send-btn { background: linear-gradient(135deg, #6070f0, #4848d8); box-shadow: 0 4px 16px rgba(74,92,232,0.35); }
+body.light .send-btn:hover { box-shadow: 0 6px 24px rgba(74,92,232,0.52); }
+body.light #save-btn { background: linear-gradient(135deg, #6070f0, #4848d8); box-shadow: 0 4px 16px rgba(74,92,232,0.3); }
+body.light .bubble { border-color: var(--border2); }
+body.light .moment-card:hover { box-shadow: 0 10px 36px rgba(0,0,0,0.1); }
+body.light #modal { box-shadow: 0 30px 80px rgba(0,0,0,0.18), inset 0 1px 0 rgba(255,255,255,0.6); }
+body.light .comment-section { background: rgba(0,0,0,0.04); }
+body.light .toggle-slider { background: rgba(0,0,0,0.09); }
+body.light .voice-bubble { background: rgba(0,0,0,0.05); border-color: rgba(0,0,0,0.1); }
+body.light .voice-bubble:hover { background: rgba(0,0,0,0.09); }
+
+/* ══════════════════════════
+   MOBILE RESPONSIVE
+══════════════════════════ */
+@media (max-width: 680px) {
+    :root { --sidebar-w: 80vw; }
+    #sidebar {
+        position: fixed; left: 0; top: 0; bottom: 0; z-index: 50; max-width: 300px;
+        transform: translateX(-100%);
+        transition: transform 0.32s cubic-bezier(0.4,0,0.2,1), box-shadow 0.32s;
+        box-shadow: none;
+    }
+    #sidebar.open { transform: translateX(0); box-shadow: 8px 0 48px rgba(0,0,0,0.55); }
+    #sidebar-overlay { display: block; }
+    #hamburger { display: flex; }
+    .chat-window { padding: 16px 14px 12px; }
+    .bubble-col { max-width: 80%; }
+    .msg-group { margin-bottom: 14px; }
+    .msg-group.same-sender { margin-top: -8px; }
+    .input-area { padding: 10px 12px; gap: 8px; }
+    .send-btn { padding: 10px 16px; font-size: 13px; }
+    .chat-header { padding: 0 14px; height: 58px; }
+    .moments-header { height: 58px; padding: 0 18px; }
+    .moments-scroll-area { padding-top: 58px; }
+    .bubble { font-size: 13.5px; }
+    #modal { border-radius: 22px 22px 0 0; max-height: 92vh; width: 100%; }
+    #modal-overlay { align-items: flex-end; }
+    .moments-cover { height: 180px; }
+    #moments-list { padding: 0 14px 24px; }
+    .nav-item { padding: 9px 11px; margin: 2px 8px; }
+    .nav-avatar { width: 38px; height: 38px; border-radius: 12px; }
+}
+
+/* ── Avatar color styles for ENFJ ── */
+.msg-avatar.ENFJ { box-shadow: 0 2px 12px var(--glow-enfj); }
+
+</style>
+</head>
+<body>
+<div id="noise-overlay" aria-hidden="true"></div>
+
+<!-- 侧边栏遮罩（移动端） -->
+<div id="sidebar-overlay" onclick="closeSidebar()"></div>
+
+<!-- 在 <body> 最开头加这段，保证所有渐变 ID 始终可访问 -->
+<svg aria-hidden="true" style="position:absolute;width:0;height:0;overflow:hidden">
+  <defs>
+    <linearGradient id="g-enfp" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ffcb6b"/><stop offset="100%" stop-color="#ff6b35"/>
+    </linearGradient>
+    <linearGradient id="g-infp" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#a8d8f0"/><stop offset="100%" stop-color="#4a8fd4"/>
+    </linearGradient>
+    <linearGradient id="g-entp" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#d8a0f8"/><stop offset="100%" stop-color="#9b40e8"/>
+    </linearGradient>
+    <linearGradient id="g-entj" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ff8585"/><stop offset="100%" stop-color="#e63b3b"/>
+    </linearGradient>
+    <linearGradient id="g-infj" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#80ecc0"/><stop offset="100%" stop-color="#28a870"/>
+    </linearGradient>
+    <linearGradient id="g-grp" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#8899ff"/><stop offset="100%" stop-color="#6644bb"/>
+    </linearGradient>
+    <linearGradient id="g-mom" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#f8a0fb"/><stop offset="100%" stop-color="#e84070"/>
+    </linearGradient>
+  </defs>
+</svg>
+
+<div id="sidebar">
+    <div id="sidebar-header">
+        <div style="display:flex;align-items:center;justify-content:space-between">
+            <div id="app-title-wrap">
+                <div id="app-title">MBTI 群聊实验室</div>
+                <div class="status-dot"></div>
+            </div>
+            <button id="theme-toggle" onclick="toggleTheme()" title="切换明暗主题">🌙</button>
+        </div>
+        <div id="app-sub">AI 多智能体模拟系统</div>
+        <div id="user-bar" style="display:none;margin-top:10px;padding-top:10px;border-top:1px solid var(--border);align-items:center;justify-content:space-between">
+            <span id="current-username" style="font-size:11px;color:var(--text-muted);font-weight:500"></span>
+            <button onclick="logout()" style="font-size:10.5px;padding:3px 10px;border:1px solid var(--border2);border-radius:7px;background:transparent;color:var(--text-muted);cursor:pointer;transition:all 0.15s" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--text-muted)'">退出</button>
+        </div>
+    </div>
+    <div id="nav-list">
+        <div class="nav-item active" onclick="switchPanel('group')" id="nav-group">
+            <div class="nav-avatar group" id="nav-av-group"></div>
+            <div class="nav-info">
+                <div class="nav-name">群聊</div>
+                <div class="nav-preview">...</div>
+            </div>
+            <span class="nav-badge" id="badge-group"></span>
+        </div>
+
+        <div class="nav-divider"></div>
+
+        <div class="nav-item" onclick="switchPanel('dm-ENFP')" id="nav-dm-ENFP">
+            <div class="nav-avatar ENFP" id="nav-av-ENFP"></div>
+            <div class="nav-info">
+                <div class="nav-name">暖暖</div>
+                <div class="nav-preview">新媒体运营 热情小太阳</div>
+            </div>
+            <span class="nav-badge" id="badge-dm-ENFP"></span>
+        </div>
+        <div class="nav-item" onclick="switchPanel('dm-INFP')" id="nav-dm-INFP">
+            <div class="nav-avatar INFP" id="nav-av-INFP"></div>
+            <div class="nav-info">
+                <div class="nav-name">小沈</div>
+                <div class="nav-preview">自由插画师 温柔细腻</div>
+            </div>
+            <span class="nav-badge" id="badge-dm-INFP"></span>
+        </div>
+        <div class="nav-item" onclick="switchPanel('dm-ENTP')" id="nav-dm-ENTP">
+            <div class="nav-avatar ENTP" id="nav-av-ENTP"></div>
+            <div class="nav-info">
+                <div class="nav-name">老程</div>
+                <div class="nav-preview">产品经理 逻辑鬼才</div>
+            </div>
+            <span class="nav-badge" id="badge-dm-ENTP"></span>
+        </div>
+        <div class="nav-item" onclick="switchPanel('dm-ENTJ')" id="nav-dm-ENTJ">
+            <div class="nav-avatar ENTJ" id="nav-av-ENTJ"></div>
+            <div class="nav-info">
+                <div class="nav-name">王姐</div>
+                <div class="nav-preview">创业合伙人 效率至上</div>
+            </div>
+            <span class="nav-badge" id="badge-dm-ENTJ"></span>
+        </div>
+        <div class="nav-item" onclick="switchPanel('dm-ESTJ')" id="nav-dm-ESTJ">
+            <div class="nav-avatar ESTJ" id="nav-av-ESTJ"></div>
+            <div class="nav-info">
+                <div class="nav-name">李姐</div>
+                <div class="nav-preview">财务经理 操心担当</div>
+            </div>
+            <span class="nav-badge" id="badge-dm-ESTJ"></span>
+        </div>
+        <div class="nav-item" onclick="switchPanel('dm-ENFJ')" id="nav-dm-ENFJ">
+            <div class="nav-avatar ENFJ" id="nav-av-ENFJ"></div>
+            <div class="nav-info">
+                <div class="nav-name">赵老师</div>
+                <div class="nav-preview">高中语文老师 温暖大家长</div>
+            </div>
+            <span class="nav-badge" id="badge-dm-ENFJ"></span>
+        </div>
+
+        <div class="nav-divider"></div>
+
+        <div class="nav-item" onclick="switchPanel('moments')" id="nav-moments">
+            <div class="nav-avatar moments" id="nav-av-moments"></div>
+            <div class="nav-info">
+                <div class="nav-name">朋友圈</div>
+                <div class="nav-preview">查看大家的动态</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="main">
+
+    <div class="panel active" id="panel-group">
+        <div class="chat-header">
+            <div class="chat-header-left">
+                <div class="chat-header-avatar group" id="hav-group"></div>
+                <div>
+                    <div class="chat-header-name">群聊</div>
+                    <div class="chat-header-sub" id="date-label-group"></div>
+                </div>
+            </div>
+            <div class="chat-header-right">
+                <div id="typing-bar"></div>
+                <button class="icon-btn" onclick="openModal()" title="调参设置">⚙</button>
+                <button id="hamburger" onclick="openSidebar()" title="菜单">☰</button>
+            </div>
+        </div>
+        <div class="chat-window" id="chat-window-group">
+            <div class="date-divider" id="date-label"></div>
+        </div>
+        
+        <!-- Mention List (Hidden) -->
+        <div id="mention-list"></div>
+
+        <div class="input-area">
+            <!-- Image Upload Button -->
+            <label for="image-upload" class="upload-btn" title="发图片">📷</label>
+            <input type="file" id="image-upload" accept="image/*" style="display: none;">
+
+            <!-- Voice Button -->
+            <button class="icon-btn" id="voice-btn-group" title="按住说话" style="margin-right:8px;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;">🎙️</button>
+
+            <div class="input-wrap">
+                <input type="text" class="msg-input" id="msg-input-group" placeholder="发消息给群聊…">
+            </div>
+            <button class="send-btn" onclick="sendGroup()">发送</button>
+        </div>
+    </div>
+
+    <div class="panel" id="panel-dm-ENFP">
+        <div class="chat-header">
+            <div class="chat-header-left">
+                <div class="chat-header-avatar ENFP" id="hav-ENFP"></div>
+                <div><div class="chat-header-name">暖暖</div><div class="chat-header-sub">新媒体运营 热情小太阳</div></div>
+            </div>
+            <div class="chat-header-right"><div class="typing-bar-dm" id="typing-ENFP"></div><button class="icon-btn" onclick="openSidebar()" title="菜单" style="display:none" id="ham-ENFP">☰</button></div>
+        </div>
+        <div class="chat-window" id="chat-window-dm-ENFP"></div>
+        <div class="input-area">
+            <label for="dm-image-upload-ENFP" class="dm-upload-btn" title="发图片">📷</label>
+            <input type="file" id="dm-image-upload-ENFP" class="dm-upload-file" accept="image/*" data-role="ENFP">
+            <!-- Voice Button -->
+            <button class="icon-btn dm-voice-btn" id="voice-btn-dm-ENFP" data-role="ENFP" title="按住说话" style="margin-right:8px;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;">🎙️</button>
+            <div class="input-wrap"><input type="text" class="msg-input" id="msg-input-dm-ENFP" placeholder="发消息给 暖暖…" ></div>
+            <button class="send-btn" onclick="sendDM('ENFP')">发送</button>
+        </div>
+    </div>
+
+    <div class="panel" id="panel-dm-INFP">
+        <div class="chat-header">
+            <div class="chat-header-left">
+                <div class="chat-header-avatar INFP" id="hav-INFP"></div>
+                <div><div class="chat-header-name">小沈</div><div class="chat-header-sub">自由插画师 温柔细腻</div></div>
+            </div>
+            <div class="chat-header-right"><div class="typing-bar-dm" id="typing-INFP"></div><button class="icon-btn" onclick="openSidebar()" title="菜单" style="display:none" id="ham-INFP">☰</button></div>
+        </div>
+        <div class="chat-window" id="chat-window-dm-INFP"></div>
+        <div class="input-area">
+            <label for="dm-image-upload-INFP" class="dm-upload-btn" title="发图片">📷</label>
+            <input type="file" id="dm-image-upload-INFP" class="dm-upload-file" accept="image/*" data-role="INFP">
+            <button class="icon-btn dm-voice-btn" id="voice-btn-dm-INFP" data-role="INFP" title="按住说话" style="margin-right:8px;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;">🎙️</button>
+            <div class="input-wrap"><input type="text" class="msg-input" id="msg-input-dm-INFP" placeholder="发消息给 小沈…" ></div>
+            <button class="send-btn" onclick="sendDM('INFP')">发送</button>
+        </div>
+    </div>
+
+    <div class="panel" id="panel-dm-ENTP">
+        <div class="chat-header">
+            <div class="chat-header-left">
+                <div class="chat-header-avatar ENTP" id="hav-ENTP"></div>
+                <div><div class="chat-header-name">老程</div><div class="chat-header-sub">产品经理 逻辑鬼才</div></div>
+            </div>
+            <div class="chat-header-right"><div class="typing-bar-dm" id="typing-ENTP"></div><button class="icon-btn" onclick="openSidebar()" title="菜单" style="display:none" id="ham-ENTP">☰</button></div>
+        </div>
+        <div class="chat-window" id="chat-window-dm-ENTP"></div>
+        <div class="input-area">
+            <label for="dm-image-upload-ENTP" class="dm-upload-btn" title="发图片">📷</label>
+            <input type="file" id="dm-image-upload-ENTP" class="dm-upload-file" accept="image/*" data-role="ENTP">
+            <button class="icon-btn dm-voice-btn" id="voice-btn-dm-ENTP" data-role="ENTP" title="按住说话" style="margin-right:8px;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;">🎙️</button>
+            <div class="input-wrap"><input type="text" class="msg-input" id="msg-input-dm-ENTP" placeholder="发消息给 老程…" ></div>
+            <button class="send-btn" onclick="sendDM('ENTP')">发送</button>
+        </div>
+    </div>
+
+    <div class="panel" id="panel-dm-ENTJ">
+        <div class="chat-header">
+            <div class="chat-header-left">
+                <div class="chat-header-avatar ENTJ" id="hav-ENTJ"></div>
+                <div><div class="chat-header-name">王姐</div><div class="chat-header-sub">创业合伙人 效率至上</div></div>
+            </div>
+            <div class="chat-header-right"><div class="typing-bar-dm" id="typing-ENTJ"></div><button class="icon-btn" onclick="openSidebar()" title="菜单" style="display:none" id="ham-ENTJ">☰</button></div>
+        </div>
+        <div class="chat-window" id="chat-window-dm-ENTJ"></div>
+        <div class="input-area">
+            <label for="dm-image-upload-ENTJ" class="dm-upload-btn" title="发图片">📷</label>
+            <input type="file" id="dm-image-upload-ENTJ" class="dm-upload-file" accept="image/*" data-role="ENTJ">
+            <button class="icon-btn dm-voice-btn" id="voice-btn-dm-ENTJ" data-role="ENTJ" title="按住说话" style="margin-right:8px;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;">🎙️</button>
+            <div class="input-wrap"><input type="text" class="msg-input" id="msg-input-dm-ENTJ" placeholder="发消息给 王姐…" ></div>
+            <button class="send-btn" onclick="sendDM('ENTJ')">发送</button>
+        </div>
+    </div>
+
+    <div class="panel" id="panel-dm-ESTJ">
+        <div class="chat-header">
+            <div class="chat-header-left">
+                <div class="chat-header-avatar ESTJ" id="hav-ESTJ"></div>
+                <div><div class="chat-header-name">李姐</div><div class="chat-header-sub">财务经理 操心担当</div></div>
+            </div>
+            <div class="chat-header-right"><div class="typing-bar-dm" id="typing-ESTJ"></div><button class="icon-btn" onclick="openSidebar()" title="菜单" style="display:none" id="ham-ESTJ">☰</button></div>
+        </div>
+        <div class="chat-window" id="chat-window-dm-ESTJ"></div>
+        <div class="input-area">
+            <label for="dm-image-upload-ESTJ" class="dm-upload-btn" title="发图片">📷</label>
+            <input type="file" id="dm-image-upload-ESTJ" class="dm-upload-file" accept="image/*" data-role="ESTJ">
+            <button class="icon-btn dm-voice-btn" id="voice-btn-dm-ESTJ" data-role="ESTJ" title="按住说话" style="margin-right:8px;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;">🎙️</button>
+            <div class="input-wrap"><input type="text" class="msg-input" id="msg-input-dm-ESTJ" placeholder="发消息给 李姐…" ></div>
+            <button class="send-btn" onclick="sendDM('ESTJ')">发送</button>
+        </div>
+    </div>
+
+    <div class="panel" id="panel-dm-ENFJ">
+        <div class="chat-header">
+            <div class="chat-header-left">
+                <div class="chat-header-avatar ENFJ" id="hav-ENFJ"></div>
+                <div>
+                    <div class="chat-header-name">赵老师</div>
+                    <div class="chat-header-sub" id="date-label-dm-ENFJ">高中语文老师 温暖大家长</div>
+                </div>
+            </div>
+            <div class="chat-header-right">
+                <div id="typing-bar-dm-ENFJ"></div>
+                
+                <button class="icon-btn" onclick="openModal()" title="调参设置">⚙</button>
+                <button id="hamburger" onclick="openSidebar()" title="菜单">☰</button>
+            </div>
+        </div>
+        <div class="chat-window" id="chat-window-dm-ENFJ">
+            <div class="date-divider" id="date-label-dm-ENFJ-inner"></div>
+        </div>
+        <div class="input-area">
+            <label for="dm-upload-ENFJ" class="dm-upload-btn" title="发图片">📷</label>
+            <input type="file" id="dm-upload-ENFJ" class="dm-upload-file" accept="image/*" data-role="ENFJ">
+            <button class="icon-btn dm-voice-btn" id="voice-btn-dm-ENFJ" data-role="ENFJ" title="按住说话" style="margin-right:8px;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;">🎙️</button>
+            <div class="input-wrap">
+                <input type="text" class="msg-input" id="msg-input-dm-ENFJ" placeholder="发消息给 赵老师…" autocomplete="off">
+            </div>
+            <button class="send-btn" onclick="sendDM('ENFJ')">发送</button>
+        </div>
+    </div>
+
+    <div class="panel" id="panel-moments">
+        <div class="moments-header">
+            <div class="moments-header-title">朋友圈</div>
+            <button class="icon-btn" onclick="generateMoments()" id="gen-moments-btn" title="强制刷新动态">↻</button>
+        </div>
+
+        <div class="moments-scroll-area" id="moments-scroll-area">
+            <div class="moments-cover">
+                <div class="my-profile">
+                    <div class="my-name">INFJ (我)</div>
+                    <div class="my-avatar-wrap">
+                        <div class="moment-avatar INFJ" id="hav-INFJ-cover"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="moments-list">
+                <div class="moments-empty">
+                    <div class="emoji">🌸</div>
+                    <div>还没有动态，点击右上角刷新</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div><div id="modal-overlay" onclick="handleOverlayClick(event)">
+  <div id="modal">
+    <div id="modal-header">
+        <div id="modal-title">调参面板</div>
+        <button id="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <div id="modal-tabs">
+        <div class="modal-tab tab-ENFP active" onclick="switchTab('ENFP')">ENFP</div>
+        <div class="modal-tab tab-INFP"         onclick="switchTab('INFP')">INFP</div>
+        <div class="modal-tab tab-ENTP"         onclick="switchTab('ENTP')">ENTP</div>
+        <div class="modal-tab tab-ENTJ"         onclick="switchTab('ENTJ')">ENTJ</div>
+        <div class="modal-tab tab-ESTJ"         onclick="switchTab('ESTJ')">ESTJ</div>
+        <div class="modal-tab tab-ENFJ"         onclick="switchTab('ENFJ')">ENFJ</div>
+        <div class="modal-tab tab-global"       onclick="switchTab('global')">全局设置</div>
+    </div>
+    <div id="modal-body">
+        <div class="tab-panel active" id="panel-ENFP">
+            <div class="field">
+                <div class="field-label">基础人设（只读）</div>
+                <div class="persona-box" id="persona-ENFP"></div>
+                <span class="expand-btn" onclick="togglePersona('ENFP')">展开查看全部 ▾</span>
+            </div>
+            <div class="field">
+                <div class="field-label">自定义补充指令</div>
+                <textarea class="field-input" id="extra-ENFP" placeholder="例：今天心情特别好，比平时更亢奋。"></textarea>
+                <div class="field-desc">给该角色增加额外的指令，例如设定当前心情、正在做的事或特殊状态。</div>
+            </div>
+            <hr class="field-divider">
+            <div class="field">
+                <div class="field-label">Temperature</div>
+                <div class="slider-row"><input type="range" id="temp-ENFP" min="0.5" max="1.6" step="0.05" oninput="syncVal(this,'tempval-ENFP')"><span class="slider-value" id="tempval-ENFP">1.15</span></div>
+                <div class="field-desc">控制回复的随机性。值越高越疯癫（更有创造力），值越低越死板（更逻辑）。</div>
+            </div>
+            <div class="field">
+                <div class="field-label">触发概率</div>
+                <div class="slider-row"><input type="range" id="prob-ENFP" min="0" max="1" step="0.05" oninput="syncVal(this,'probval-ENFP','%',100)"><span class="slider-value" id="probval-ENFP">100%</span></div>
+                <div class="field-desc">当你在群里说话时，该角色主动插嘴回复你的概率。</div>
+            </div>
+        </div>
+        <div class="tab-panel" id="panel-INFP">
+            <div class="field">
+                <div class="field-label">基础人设（只读）</div>
+                <div class="persona-box" id="persona-INFP"></div>
+                <span class="expand-btn" onclick="togglePersona('INFP')">展开查看全部 ▾</span>
+            </div>
+            <div class="field">
+                <div class="field-label">自定义补充指令</div>
+                <textarea class="field-input" id="extra-INFP" placeholder="例：最近在重读《挪威的森林》。"></textarea>
+                <div class="field-desc">给该角色增加额外的指令，例如设定当前心情、正在做的事或特殊状态。</div>
+            </div>
+            <hr class="field-divider">
+            <div class="field">
+                <div class="field-label">Temperature</div>
+                <div class="slider-row"><input type="range" id="temp-INFP" min="0.5" max="1.6" step="0.05" oninput="syncVal(this,'tempval-INFP')"><span class="slider-value" id="tempval-INFP">1.15</span></div>
+                <div class="field-desc">控制回复的随机性。值越高越疯癫（更有创造力），值越低越死板（更逻辑）。</div>
+            </div>
+            <div class="field">
+                <div class="field-label">触发概率</div>
+                <div class="slider-row"><input type="range" id="prob-INFP" min="0" max="1" step="0.05" oninput="syncVal(this,'probval-INFP','%',100)"><span class="slider-value" id="probval-INFP">60%</span></div>
+                <div class="field-desc">当你在群里说话时，该角色主动插嘴回复你的概率。</div>
+            </div>
+        </div>
+        <div class="tab-panel" id="panel-ENTP">
+            <div class="field">
+                <div class="field-label">基础人设（只读）</div>
+                <div class="persona-box" id="persona-ENTP"></div>
+                <span class="expand-btn" onclick="togglePersona('ENTP')">展开查看全部 ▾</span>
+            </div>
+            <div class="field">
+                <div class="field-label">自定义补充指令</div>
+                <textarea class="field-input" id="extra-ENTP" placeholder="例：今天心情有点不好，阴阳比平时更毒。"></textarea>
+                <div class="field-desc">给该角色增加额外的指令，例如设定当前心情、正在做的事或特殊状态。</div>
+            </div>
+            <hr class="field-divider">
+            <div class="field">
+                <div class="field-label">Temperature</div>
+                <div class="slider-row"><input type="range" id="temp-ENTP" min="0.5" max="1.6" step="0.05" oninput="syncVal(this,'tempval-ENTP')"><span class="slider-value" id="tempval-ENTP">1.15</span></div>
+                <div class="field-desc">控制回复的随机性。值越高越疯癫（更有创造力），值越低越死板（更逻辑）。</div>
+            </div>
+            <div class="field">
+                <div class="field-label">触发概率</div>
+                <div class="slider-row"><input type="range" id="prob-ENTP" min="0" max="1" step="0.05" oninput="syncVal(this,'probval-ENTP','%',100)"><span class="slider-value" id="probval-ENTP">55%</span></div>
+                <div class="field-desc">当你在群里说话时，该角色主动插嘴回复你的概率。</div>
+            </div>
+            <hr class="field-divider">
+            <div class="field">
+                <div class="field-label">脏话过滤</div>
+                <div class="toggle-row"><span style="font-size:13px;color:var(--text-sub)">开启脏话过滤</span><label class="toggle"><input type="checkbox" id="censor-toggle" checked><span class="toggle-slider"></span></label></div>
+                <div class="field-desc">开启后会自动过滤 ENTP 的部分攻击性词汇（如“傻逼”替换为“**”）。</div>
+            </div>
+        </div>
+        <div class="tab-panel" id="panel-ENTJ">
+            <div class="field">
+                <div class="field-label">基础人设（只读）</div>
+                <div class="persona-box" id="persona-ENTJ"></div>
+                <span class="expand-btn" onclick="togglePersona('ENTJ')">展开查看全部 ▾</span>
+            </div>
+            <div class="field">
+                <div class="field-label">自定义补充指令</div>
+                <textarea class="field-input" id="extra-ENTJ" placeholder="例：今天正在筹备上市，心情很好。"></textarea>
+                <div class="field-desc">给该角色增加额外的指令，例如设定当前心情、正在做的事或特殊状态。</div>
+            </div>
+            <hr class="field-divider">
+            <div class="field">
+                <div class="field-label">Temperature</div>
+                <div class="slider-row"><input type="range" id="temp-ENTJ" min="0.5" max="1.6" step="0.05" oninput="syncVal(this,'tempval-ENTJ')"><span class="slider-value" id="tempval-ENTJ">1.0</span></div>
+                <div class="field-desc">控制回复的随机性。值越高越疯癫（更有创造力），值越低越死板（更逻辑）。</div>
+            </div>
+            <div class="field">
+                <div class="field-label">触发概率</div>
+                <div class="slider-row"><input type="range" id="prob-ENTJ" min="0" max="1" step="0.05" oninput="syncVal(this,'probval-ENTJ','%',100)"><span class="slider-value" id="probval-ENTJ">60%</span></div>
+                <div class="field-desc">当你在群里说话时，该角色主动插嘴回复你的概率。</div>
+            </div>
+        </div>
+        <div class="tab-panel" id="panel-ESTJ">
+            <div class="field">
+                <div class="field-label">基础人设（只读）</div>
+                <div class="persona-box" id="persona-ESTJ"></div>
+                <span class="expand-btn" onclick="togglePersona('ESTJ')">展开查看全部 ▾</span>
+            </div>
+            <div class="field">
+                <div class="field-label">自定义补充指令</div>
+                <textarea class="field-input" id="extra-ESTJ" placeholder="例：今天正在检查所有人的考勤。"></textarea>
+                <div class="field-desc">给该角色增加额外的指令，例如设定当前心情、正在做的事或特殊状态。</div>
+            </div>
+            <hr class="field-divider">
+            <div class="field">
+                <div class="field-label">Temperature</div>
+                <div class="slider-row"><input type="range" id="temp-ESTJ" min="0.5" max="1.6" step="0.05" oninput="syncVal(this,'tempval-ESTJ')"><span class="slider-value" id="tempval-ESTJ">0.95</span></div>
+                <div class="field-desc">控制回复的随机性。值越高越疯癫（更有创造力），值越低越死板（更逻辑）。</div>
+            </div>
+            <div class="field">
+                <div class="field-label">触发概率</div>
+                <div class="slider-row"><input type="range" id="prob-ESTJ" min="0" max="1" step="0.05" oninput="syncVal(this,'probval-ESTJ','%',100)"><span class="slider-value" id="probval-ESTJ">65%</span></div>
+                <div class="field-desc">当你在群里说话时，该角色主动插嘴回复你的概率。</div>
+            </div>
+        </div>
+        <div class="tab-panel" id="panel-ENFJ">
+            <div class="field">
+                <div class="field-label">基础人设（只读）</div>
+                <div class="persona-box" id="persona-ENFJ"></div>
+                <span class="expand-btn" onclick="togglePersona('ENFJ')">展开查看全部 ▾</span>
+            </div>
+            <div class="field">
+                <div class="field-label">自定义补充指令</div>
+                <textarea class="field-input" id="extra-ENFJ" placeholder="例：今天想组织大家去露营。"></textarea>
+                <div class="field-desc">给该角色增加额外的指令，例如设定当前心情、正在做的事或特殊状态。</div>
+            </div>
+            <hr class="field-divider">
+            <div class="field">
+                <div class="field-label">Temperature</div>
+                <div class="slider-row"><input type="range" id="temp-ENFJ" min="0.5" max="1.6" step="0.05" oninput="syncVal(this,'tempval-ENFJ')"><span class="slider-value" id="tempval-ENFJ">1.05</span></div>
+                <div class="field-desc">控制回复的随机性。值越高越疯癫（更有创造力），值越低越死板（更逻辑）。</div>
+            </div>
+            <div class="field">
+                <div class="field-label">触发概率</div>
+                <div class="slider-row"><input type="range" id="prob-ENFJ" min="0" max="1" step="0.05" oninput="syncVal(this,'probval-ENFJ','%',100)"><span class="slider-value" id="probval-ENFJ">80%</span></div>
+                <div class="field-desc">当你在群里说话时，该角色主动插嘴回复你的概率。</div>
+            </div>
+        </div>
+        <div class="tab-panel" id="panel-global">
+            <div class="field">
+                <div class="field-label">主动分享概率</div>
+                <div class="slider-row"><input type="range" id="share-prob" min="0" max="0.6" step="0.05" oninput="syncVal(this,'shareval','%',100)"><span class="slider-value" id="shareval">30%</span></div>
+                <div class="field-desc">角色主动在群里分享生活琐事的概率（后台自动触发）。</div>
+            </div>
+            <div class="field">
+                <div class="field-label">话题游走概率</div>
+                <div class="slider-row"><input type="range" id="drift-prob" min="0" max="0.5" step="0.05" oninput="syncVal(this,'driftval','%',100)"><span class="slider-value" id="driftval">20%</span></div>
+                <div class="field-desc">角色在聊天中把话题带偏、联想到自己经历的概率。</div>
+            </div>
+            <div class="field">
+                <div class="field-label">AI互聊接茬概率</div>
+                <div class="slider-row"><input type="range" id="chain-prob" min="0" max="0.9" step="0.05" oninput="syncVal(this,'chainval')"><span class="slider-value" id="chainval">0.45</span></div>
+                <div class="field-desc">当一个 AI 说话后，另一个 AI 接着话茬继续聊的概率。</div>
+            </div>
+            <hr class="field-divider">
+            <div class="field">
+                <div class="field-label">全局回复长度控制 (Max Tokens)</div>
+                <div class="slider-row"><input type="range" id="global-tokens" min="20" max="300" step="5" oninput="syncVal(this,'global-tokens-val')"><span class="slider-value" id="global-tokens-val">150</span></div>
+                <div class="field-desc">控制所有角色单次回复的最大长度（Token 数）。</div>
+            </div>
+        </div>
+    </div>
+    <div id="modal-footer">
+        <span id="save-status">调整参数后点击保存立即生效，无需重启服务</span>
+        <div style="display:flex;gap:10px">
+            <button id="reset-btn" onclick="resetConfig()">恢复默认</button>
+            <button id="save-btn"  onclick="saveConfig()">保存</button>
+        </div>
+    </div>
+  </div>
+</div>
+
+
+<script>
+/* ════════════════════════
+   AVATAR SVG SYSTEM
+════════════════════════ */
+/* 角色真名映射 */
+const ROLE_NAMES = {
+    ENFP: '暖暖', INFP: '小沈', ENTP: '老程',
+    ENTJ: '王姐', ESTJ: '李姐', ENFJ: '赵老师', INFJ: '我'
+};
+
+const AVATARS = {
+    // 快乐小狗 -> 皮卡丘 (Pikachu) - 活泼开朗
+    ENFP: `<img src="/static/avatars/enfp.png" style="width:100%;height:100%;object-fit:contain;background:rgba(255,255,255,0.1);padding:4px;">`,
+    // 蝴蝶妹妹 -> 巴大蝶 (Butterfree) - 梦幻蝴蝶
+    INFP: `<img src="/static/avatars/infp.png" style="width:100%;height:100%;object-fit:contain;background:rgba(255,255,255,0.1);padding:4px;">`,
+    // 乐子人 -> 耿鬼 (Gengar) - 捣蛋鬼
+    ENTP: `<img src="/static/avatars/entp.png" style="width:100%;height:100%;object-fit:contain;background:rgba(255,255,255,0.1);padding:4px;">`,
+    // 霸总姐 -> 超梦 (Mewtwo) - 掌控全场
+    ENTJ: `<img src="/static/avatars/entj.png" style="width:100%;height:100%;object-fit:contain;background:rgba(255,255,255,0.1);padding:4px;">`,
+    // 尺子姐 -> 风速狗 (Arcanine) - 威严正义
+    ESTJ: `<img src="/static/avatars/estj.png" style="width:100%;height:100%;object-fit:contain;background:rgba(255,255,255,0.1);padding:4px;">`,
+    // 宝剑姐 -> 快龙 (Dragonite) - 温暖守护
+    ENFJ: `<img src="/static/avatars/enfj.png" style="width:100%;height:100%;object-fit:contain;background:rgba(255,255,255,0.1);padding:4px;">`,
+    // 我 (INFJ) -> 可达鸭 (Psyduck) - 呆萌/头疼
+    INFJ: `<img src="/static/avatars/infj.png" style="width:100%;height:100%;object-fit:contain;background:rgba(255,255,255,0.1);padding:4px;">`,
+    // 群聊 -> 大师球 - 捕捉一切
+    group: `<img src="/static/avatars/group.png" style="width:100%;height:100%;object-fit:contain;background:rgba(255,255,255,0.1);padding:8px;">`,
+    moments: `<svg viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="g-mom" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#f8a0fb"/><stop offset="100%" stop-color="#e84070"/></linearGradient></defs><circle cx="40" cy="40" r="40" fill="url(#g-mom)"/><ellipse cx="40" cy="24" rx="7" ry="11" fill="rgba(255,255,255,0.85)" transform="rotate(0 40 40)"/><ellipse cx="40" cy="24" rx="7" ry="11" fill="rgba(255,255,255,0.85)" transform="rotate(72 40 40)"/><ellipse cx="40" cy="24" rx="7" ry="11" fill="rgba(255,255,255,0.85)" transform="rotate(144 40 40)"/><ellipse cx="40" cy="24" rx="7" ry="11" fill="rgba(255,255,255,0.85)" transform="rotate(216 40 40)"/><ellipse cx="40" cy="24" rx="7" ry="11" fill="rgba(255,255,255,0.85)" transform="rotate(288 40 40)"/><circle cx="40" cy="40" r="7" fill="rgba(255,220,60,0.95)"/></svg>`
+};
+
+function setAvatar(el, role) { if (el) el.innerHTML = AVATARS[role] || AVATARS.group; }
+function initAvatars() {
+    ['nav-av-group','hav-group'].forEach(id => setAvatar(document.getElementById(id), 'group'));
+    ['nav-av-ENFP','hav-ENFP'].forEach(id => setAvatar(document.getElementById(id), 'ENFP'));
+    ['nav-av-INFP','hav-INFP'].forEach(id => setAvatar(document.getElementById(id), 'INFP'));
+    ['nav-av-ENTP','hav-ENTP'].forEach(id => { const el = document.getElementById(id); if(el) setAvatar(el, 'ENTP'); });
+    ['nav-av-ENTJ','hav-ENTJ'].forEach(id => { const el = document.getElementById(id); if(el) setAvatar(el, 'ENTJ'); });
+    ['nav-av-ESTJ','hav-ESTJ'].forEach(id => { const el = document.getElementById(id); if(el) setAvatar(el, 'ESTJ'); });
+    ['nav-av-ENFJ','hav-ENFJ'].forEach(id => { const el = document.getElementById(id); if(el) setAvatar(el, 'ENFJ'); });
+    setAvatar(document.getElementById('nav-av-moments'), 'moments');
+    setAvatar(document.getElementById('hav-INFJ-cover'), 'INFJ'); // 朋友圈主理人头像
+}
+initAvatars();
+
+function playNotificationSound() {
+    try {
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        if (!AudioContext) return;
+        const ctx = new AudioContext();
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(880, ctx.currentTime); // A5
+        osc.frequency.exponentialRampToValueAtTime(500, ctx.currentTime + 0.15);
+        
+        gain.gain.setValueAtTime(0.05, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.15);
+        
+        osc.start();
+        osc.stop(ctx.currentTime + 0.15);
+    } catch (e) {
+        console.error("Audio play failed", e);
+    }
+}
+
+
+/* ════════════════════════
+   THEME & NAV
+════════════════════════ */
+let isDark = true;
+function toggleTheme() {
+    isDark = !isDark;
+    document.body.classList.toggle('light', !isDark);
+    document.getElementById('theme-toggle').textContent = isDark ? '🌙' : '☀️';
+    try { localStorage.setItem('theme', isDark ? 'dark' : 'light'); } catch(e) {}
+}
+try { if (localStorage.getItem('theme') === 'light') { isDark = false; document.body.classList.add('light'); document.getElementById('theme-toggle').textContent = '☀️'; } } catch(e) {}
+
+/* ════════════════════════
+   AUTH LAYER
+════════════════════════ */
+let _token    = localStorage.getItem('mbti_token') || '';
+let _username = localStorage.getItem('mbti_username') || '';
+
+function authFetch(url, opts = {}) {
+    opts.headers = opts.headers || {};
+    if (_token) opts.headers['Authorization'] = 'Bearer ' + _token;
+    return fetch(url, opts);
+}
+
+async function submitAuth(tab) {
+    const username = document.getElementById('auth-username').value.trim();
+    const password = document.getElementById('auth-password').value;
+    const errEl    = document.getElementById('auth-error');
+    errEl.textContent = '';
+    if (!username || !password) { errEl.textContent = '请填写用户名和密码'; return; }
+    const url = tab === 'login' ? '/api/auth/login' : '/api/auth/register';
+    try {
+        const res  = await fetch(url, {
+            method: 'POST', headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ username, password })
+        });
+        const data = await res.json();
+        if (!res.ok) { errEl.textContent = data.error || '操作失败'; return; }
+        _token    = data.token;
+        _username = data.username;
+        localStorage.setItem('mbti_token',    _token);
+        localStorage.setItem('mbti_username', _username);
+        document.getElementById('auth-modal').style.display = 'none';
+        initSocketAndApp();
+    } catch { errEl.textContent = '网络错误，请重试'; }
+}
+
+function switchAuthTab(tab) {
+    const tl = document.getElementById('auth-tab-login');
+    const tr = document.getElementById('auth-tab-reg');
+    const sb = document.getElementById('auth-submit');
+    tl.style.background = tab === 'login'    ? '#6c7fff' : 'transparent';
+    tl.style.color      = tab === 'login'    ? '#fff'    : '#8a8aac';
+    tr.style.background = tab === 'register' ? '#6c7fff' : 'transparent';
+    tr.style.color      = tab === 'register' ? '#fff'    : '#8a8aac';
+    sb.textContent   = tab === 'login' ? '登录' : '注册';
+    sb.dataset.tab   = tab;
+    document.getElementById('auth-error').textContent = '';
+}
+
+function logout() {
+    localStorage.removeItem('mbti_token');
+    localStorage.removeItem('mbti_username');
+    location.reload();
+}
+
+/* ════════════════════════
+   SOCKET INIT
+════════════════════════ */
+let socket = null;
+
+function initSocketAndApp() {
+    socket = io({
+        reconnection: true,
+        reconnectionAttempts: 10,
+        transports: ['polling'],
+        query: { token: _token }
+    });
+    bindSocketEvents();
+
+    // 加载历史
+    authFetch('/api/history/group').then(r => r.json()).then(d => {
+        if (d.history) {
+            d.history.forEach(m => appendGroupBubble(m.role, m.content, true, m.image, m.audio));
+            if (d.history.length > 0) {
+                const last = d.history[d.history.length - 1];
+                updateNavPreview('nav-group', last.audio ? '[语音]' : last.image ? '[图片]' : (last.content || ''), last.role);
+            }
+        }
+    }).catch(()=>{});
+
+    ['ENFP','INFP','ENTP','ENTJ','ESTJ','ENFJ'].forEach(role => {
+        authFetch(`/api/history/dm/${role}`).then(r => r.json()).then(d => {
+            if (d.history) {
+                d.history.forEach(m => appendDMBubble(role, m.sender, m.content, true, m.image, m.audio));
+                if (d.history.length > 0) {
+                    const last = d.history[d.history.length - 1];
+                    updateNavPreview('nav-dm-' + role, last.audio ? '[语音]' : last.image ? '[图片]' : (last.content || ''));
+                }
+            }
+        }).catch(()=>{});
+    });
+
+    authFetch('/api/moments').then(r => r.json()).then(data => {
+        if (data.moments) { data.moments.forEach(m => momentsData.push(m)); renderMoments(); }
+    }).catch(()=>{});
+
+    // 显示用户名 + 退出按钮
+    const unEl  = document.getElementById('current-username');
+    const barEl = document.getElementById('user-bar');
+    if (unEl)  unEl.textContent  = '👤 ' + _username;
+    if (barEl) barEl.style.display = 'flex';
+}
+
+if (_token) {
+    // 已登录，直接初始化
+    document.addEventListener('DOMContentLoaded', initSocketAndApp);
+} else {
+    // 未登录，显示登录弹窗
+    document.addEventListener('DOMContentLoaded', () => {
+        document.getElementById('auth-modal').style.display = 'flex';
+    });
+}
+
+let currentPanel = 'group';
+const unreadCounts = { group: 0, 'dm-ENFP': 0, 'dm-INFP': 0, 'dm-ENTP': 0, 'dm-ENTJ': 0, 'dm-ESTJ': 0, 'dm-ENFJ': 0, moments: 0 };
+
+function updateBadge(panelId) {
+    const navEl = document.getElementById('nav-' + panelId);
+    if (!navEl) return;
+    let badge = navEl.querySelector('.unread-badge');
+    const count = unreadCounts[panelId] || 0;
+    if (count <= 0) { if (badge) badge.remove(); return; }
+    if (!badge) { badge = document.createElement('div'); badge.className = 'unread-badge'; navEl.appendChild(badge); }
+    badge.textContent = count > 99 ? '99+' : count;
+}
+function addUnread(panelId) {
+    if (currentPanel === panelId) return;
+    unreadCounts[panelId] = (unreadCounts[panelId] || 0) + 1;
+    updateBadge(panelId);
+}
+function switchPanel(name) {
+    document.querySelectorAll('.panel').forEach(p => { p.classList.remove('active'); p.style.display = ''; });
+    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+    document.getElementById('panel-' + name)?.classList.add('active');
+    document.getElementById('nav-' + name)?.classList.add('active');
+    currentPanel = name; unreadCounts[name] = 0; updateBadge(name);
+}
+
+const dateStr = new Date().toLocaleString('zh-CN', { month:'long', day:'numeric', weekday:'short' });
+document.getElementById('date-label').textContent = dateStr;
+document.getElementById('date-label-group') && (document.getElementById('date-label-group').textContent = dateStr);
+
+/* ════════════════════════
+   CHAT RENDERING
+════════════════════════ */
+let lastGroupRole = null;
+const dmLastRole = { ENFP: null, INFP: null, ENTP: null, ENTJ: null, ESTJ: null, ENFJ: null };
+
+let isSendingGroup = false;
+function sendGroup() {
+    if (isSendingGroup) return;
+    const input = document.getElementById('msg-input-group');
+    const content = input.value.trim();
+    if (!content) return;
+    isSendingGroup = true;
+    console.log('[Frontend] Sending group message:', content);
+    appendGroupBubble('INFJ', content);
+    socket.emit('user_message', { content });
+    input.value = '';
+    setTimeout(() => { isSendingGroup = false; }, 500);
+}
+function sendDM(role) {
+    const input = document.getElementById('msg-input-dm-' + role);
+    const content = input.value.trim();
+    if (!content) return;
+    appendDMBubble(role, 'INFJ', content);
+    socket.emit('dm_message', { role, content });
+    input.value = '';
+}
+
+function updateNavPreview(panelId, text, sender = "") {
+    const navItem = document.getElementById(panelId);
+    if (!navItem) return;
+    const previewEl = navItem.querySelector('.nav-preview');
+    if (!previewEl) return;
+    
+    let content = text || "";
+    if (content.includes('[IMG:')) content = '[图片]';
+    
+    // Clean up
+    content = content.replace(/\[IMG:.*?\]/g, '[图片]').replace(/\[VOICE\]/g, '');
+    
+    if (sender) {
+        previewEl.textContent = `${sender}: ${content}`;
+    } else {
+        previewEl.textContent = content;
+    }
+}
+
+function appendGroupBubble(role, content, isHistory = false, image = "", audio = "") {
+    // Update Preview
+    let previewText = content;
+    if (image) previewText = '[图片]';
+    if (audio) previewText = '[语音]';
+    updateNavPreview('nav-group', previewText, role);
+
+    const isSame = (role === lastGroupRole) && !isHistory && !audio; // Audio always needs new bubble usually
+    const isSelf = (role === 'INFJ');
+    const win = document.getElementById('chat-window-group');
+
+    const group = document.createElement('div');
+    group.className = `msg-group${isSelf ? ' self' : ''}${isSame ? ' same-sender' : ''}`;
+
+    const av = document.createElement('div');
+    av.className = `msg-avatar ${role}${isSame ? ' phantom' : ''}`;
+    if (!isSame) av.innerHTML = AVATARS[role] || '';
+
+    const col = document.createElement('div');
+    col.className = 'bubble-col';
+    if (!isSame && !isSelf) {
+        const nick = document.createElement('div'); nick.className = 'msg-sender'; nick.textContent = ROLE_NAMES[role] || role; col.appendChild(nick);
+    }
+    const bubble = document.createElement('div');
+    bubble.className = 'bubble' + (isHistory ? ' no-anim' : '');
+
+    if (!audio) {
+        if (content) bubble.textContent = content;
+    }
+
+    if (image) {
+        const loader = document.createElement('div'); loader.className = 'img-loading';
+        bubble.appendChild(loader);
+
+        const img = document.createElement('img');
+        img.src = image;
+        img.style.display = 'none';
+        img.onload = () => {
+            loader.remove();
+            img.style.display = 'block';
+            // 智能滚动：仅当自己发送或接近底部时滚动
+            const dist = win.scrollHeight - win.scrollTop - win.clientHeight;
+            if (!isHistory && (isSelf || dist <= 300)) {
+                win.scrollTo({ top: win.scrollHeight, behavior: 'smooth' });
+            }
+        };
+        img.onerror = () => {
+            loader.innerHTML = '<span style="color:#ff5555">❌ 图片加载失败<br>请检查网络/代理</span>';
+        };
+        img.onclick = () => window.open(image, '_blank');
+        bubble.appendChild(img);
+    }
+    if (audio) {
+        console.log('[Frontend] Rendering voice bubble for:', audio);
+
+        // WeChat-style Voice Bubble
+        const voiceBubble = document.createElement('div');
+        voiceBubble.className = 'voice-bubble';
+        
+        // Icon
+        const icon = document.createElement('div');
+        icon.className = 'voice-icon';
+        
+        // Duration (Placeholder, since we can't get duration without loading)
+        const duration = document.createElement('div');
+        duration.className = 'voice-duration';
+        duration.textContent = '...';
+        
+        // Red dot for unread (optional, skipping for now to keep simple)
+        // const dot = document.createElement('div'); dot.className = 'voice-dot';
+
+        voiceBubble.appendChild(icon);
+        voiceBubble.appendChild(duration);
+        // voiceBubble.appendChild(dot);
+        
+        // Convert to Text Button
+        if (content) {
+            const convertBtn = document.createElement('div');
+            convertBtn.textContent = '文';
+            convertBtn.title = '转文字';
+            convertBtn.className = 'voice-convert-btn';
+            
+            // Text Container (Hidden)
+            const textDiv = document.createElement('div');
+            textDiv.style.display = 'none';
+            textDiv.style.marginTop = '8px';
+            textDiv.style.fontSize = '13px';
+            textDiv.style.lineHeight = '1.6';
+            textDiv.style.color = 'var(--text-sub)';
+            textDiv.style.borderTop = '1px solid var(--border2)';
+            textDiv.style.paddingTop = '6px';
+            textDiv.textContent = content;
+            
+            convertBtn.onclick = (e) => {
+                e.stopPropagation();
+                const isHidden = textDiv.style.display === 'none';
+                textDiv.style.display = isHidden ? 'block' : 'none';
+                convertBtn.style.opacity = isHidden ? '1' : '0.6';
+                
+                // 仅当用户在底部附近时才自动滚动，避免在查看历史时跳动
+                const dist = win.scrollHeight - win.scrollTop - win.clientHeight;
+                if (!isHistory && dist <= 300) {
+                     win.scrollTo({ top: win.scrollHeight, behavior: 'smooth' });
+                }
+            };
+            voiceBubble.appendChild(convertBtn);
+            // Append textDiv later to bubble, not voiceBubble
+            setTimeout(() => bubble.appendChild(textDiv), 0);
+        }
+        
+        // Audio Element (Hidden)
+        const audioEl = document.createElement('audio');
+        audioEl.src = audio;
+        audioEl.style.display = 'none';
+        
+        // Click to play
+        voiceBubble.onclick = () => {
+            if (audioEl.paused) {
+                // Stop all other audios first (optional but good UX)
+                document.querySelectorAll('audio').forEach(a => {
+                    if (a !== audioEl) {
+                        a.pause();
+                        a.currentTime = 0;
+                        a.parentElement.classList.remove('playing');
+                    }
+                });
+                
+                audioEl.play().catch(e => console.error("Play error:", e));
+                voiceBubble.classList.add('playing');
+            } else {
+                audioEl.pause();
+                voiceBubble.classList.remove('playing');
+            }
+        };
+        
+        // Events
+        audioEl.onended = () => {
+            voiceBubble.classList.remove('playing');
+        };
+        
+        audioEl.onloadedmetadata = () => {
+            let sec = Math.round(audioEl.duration);
+            if (sec < 1) sec = 1;
+            duration.textContent = sec + '"';
+            // Adjust width based on duration (WeChat style)
+            // min 80px, max 200px. say max duration is 60s.
+            // width = 80 + (sec / 60) * 120
+            const w = 80 + Math.min((sec / 60) * 120, 120);
+            voiceBubble.style.width = w + 'px';
+        };
+
+        // Fallback for duration if metadata takes too long or fails
+        setTimeout(() => {
+            if (duration.textContent === '...') duration.textContent = '🔊';
+        }, 3000);
+
+        bubble.appendChild(voiceBubble);
+        bubble.appendChild(audioEl);
+        
+        // Auto play if new message (not history)
+        if (!isHistory) {
+             // audioEl.play().catch(e => console.log('Auto-play blocked', e));
+        }
+    }
+    col.appendChild(bubble);
+
+    group.appendChild(av); group.appendChild(col);
+    win.appendChild(group);
+
+    lastGroupRole = role;
+    
+    if (isHistory) {
+        win.scrollTop = win.scrollHeight;
+    } else {
+        // 智能滚动：如果是自己发的消息，或者用户当前已经在底部附近，则自动滚动
+        // 否则保持用户当前位置（方便翻看历史）
+        const threshold = 250; // 容差像素
+        const distanceToBottom = win.scrollHeight - win.scrollTop - win.clientHeight;
+        // 刚添加完元素，distanceToBottom 包含了新元素的高度
+        if (isSelf || distanceToBottom <= group.offsetHeight + threshold) {
+            win.scrollTo({ top: win.scrollHeight, behavior: 'smooth' });
+        }
+    }
+}
+
+function appendDMBubble(chatRole, senderRole, content, isHistory = false, image = "", audio = "") {
+    // Update Preview
+    let previewText = content;
+    if (image) previewText = '[图片]';
+    if (audio) previewText = '[语音]';
+    updateNavPreview('nav-dm-' + chatRole, previewText);
+    
+    const win = document.getElementById('chat-window-dm-' + chatRole);
+    if (!win) return;
+    const isSelf = (senderRole === 'INFJ');
+    // 修复：同上，保持气泡连贯性
+    const isSame = (senderRole === dmLastRole[chatRole]) && !isHistory;
+
+    const group = document.createElement('div');
+    group.className = `msg-group${isSelf ? ' self' : ''}${isSame ? ' same-sender' : ''}`;
+
+    const av = document.createElement('div');
+    av.className = `msg-avatar ${senderRole}${isSame ? ' phantom' : ''}`;
+    if (!isSame) av.innerHTML = AVATARS[senderRole] || '';
+
+    const col = document.createElement('div');
+    col.className = 'bubble-col';
+    const bubble = document.createElement('div');
+    bubble.className = 'bubble' + (isHistory ? ' no-anim' : '');
+
+    if (!audio) {
+        if (content) bubble.textContent = content;
+    }
+    
+    if (image) {
+        const loader = document.createElement('div'); loader.className = 'img-loading';
+        bubble.appendChild(loader);
+
+        const img = document.createElement('img');
+        img.src = image;
+        img.style.display = 'none';
+        img.onload = () => {
+            loader.remove();
+            img.style.display = 'block';
+            // 智能滚动：仅当自己发送或接近底部时滚动
+            const dist = win.scrollHeight - win.scrollTop - win.clientHeight;
+            if (!isHistory && (isSelf || dist <= 300)) {
+                win.scrollTo({ top: win.scrollHeight, behavior: 'smooth' });
+            }
+        };
+        img.onerror = () => {
+            loader.innerHTML = '<span style="color:#ff5555">❌ 图片加载失败<br>请检查网络/代理</span>';
+        };
+        img.onclick = () => window.open(image, '_blank');
+        bubble.appendChild(img);
+    }
+    if (audio) {
+        const voiceBubble = document.createElement('div');
+        voiceBubble.className = 'voice-bubble';
+        
+        const icon = document.createElement('div');
+        icon.className = 'voice-icon';
+        
+        const duration = document.createElement('div');
+        duration.className = 'voice-duration';
+        duration.textContent = '...';
+        
+        voiceBubble.appendChild(icon);
+        voiceBubble.appendChild(duration);
+        
+        // Convert to Text Button
+        if (content) {
+            const convertBtn = document.createElement('div');
+            convertBtn.textContent = '文';
+            convertBtn.title = '转文字';
+            convertBtn.className = 'voice-convert-btn';
+            
+            const textDiv = document.createElement('div');
+            textDiv.style.display = 'none';
+            textDiv.style.marginTop = '8px';
+            textDiv.style.fontSize = '13px';
+            textDiv.style.lineHeight = '1.6';
+            textDiv.style.color = 'var(--text-sub)';
+            textDiv.style.borderTop = '1px solid var(--border2)';
+            textDiv.style.paddingTop = '6px';
+            textDiv.textContent = content;
+            
+            convertBtn.onclick = (e) => {
+                e.stopPropagation();
+                const isHidden = textDiv.style.display === 'none';
+                textDiv.style.display = isHidden ? 'block' : 'none';
+                convertBtn.style.opacity = isHidden ? '1' : '0.6';
+                
+                // 仅当用户在底部附近时才自动滚动
+                const dist = win.scrollHeight - win.scrollTop - win.clientHeight;
+                if (!isHistory && dist <= 300) {
+                     win.scrollTo({ top: win.scrollHeight, behavior: 'smooth' });
+                }
+            };
+            voiceBubble.appendChild(convertBtn);
+            setTimeout(() => bubble.appendChild(textDiv), 0);
+        }
+        
+        const audioEl = document.createElement('audio');
+        audioEl.src = audio;
+        audioEl.style.display = 'none';
+        
+        voiceBubble.onclick = () => {
+            if (audioEl.paused) {
+                document.querySelectorAll('audio').forEach(a => {
+                    if (a !== audioEl) {
+                        a.pause();
+                        a.currentTime = 0;
+                        a.parentElement.classList.remove('playing');
+                    }
+                });
+                audioEl.play().catch(e => console.error("Play error:", e));
+                voiceBubble.classList.add('playing');
+            } else {
+                audioEl.pause();
+                voiceBubble.classList.remove('playing');
+            }
+        };
+        
+        audioEl.onended = () => {
+            voiceBubble.classList.remove('playing');
+        };
+        
+        audioEl.onloadedmetadata = () => {
+            let sec = Math.round(audioEl.duration);
+            if (sec < 1) sec = 1;
+            duration.textContent = sec + '"';
+            const w = 80 + Math.min((sec / 60) * 120, 120);
+            voiceBubble.style.width = w + 'px';
+        };
+
+        setTimeout(() => {
+            if (duration.textContent === '...') duration.textContent = '🔊';
+        }, 3000);
+
+        bubble.appendChild(voiceBubble);
+        bubble.appendChild(audioEl);
+    }
+    col.appendChild(bubble);
+
+    group.appendChild(av); group.appendChild(col);
+    win.appendChild(group);
+
+    dmLastRole[chatRole] = senderRole;
+    
+    if (isHistory) {
+        win.scrollTop = win.scrollHeight;
+    } else {
+        // 智能滚动：如果是自己发的消息，或者用户当前已经在底部附近，则自动滚动
+        const threshold = 250; 
+        const distanceToBottom = win.scrollHeight - win.scrollTop - win.clientHeight;
+        if (isSelf || distanceToBottom <= group.offsetHeight + threshold) {
+            win.scrollTo({ top: win.scrollHeight, behavior: 'smooth' });
+        }
+    }
+}
+
+/* Socket Listeners */
+let groupTypingTimer = null;
+const dmTypingTimers = {};
+
+// Image Upload Logic for Group
+document.getElementById('image-upload').addEventListener('change', async function(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    // Show preview immediately in chat as "me"
+    const reader = new FileReader();
+    reader.onload = function(evt) {
+        appendGroupBubble('INFJ', '', false, evt.target.result);
+    };
+    reader.readAsDataURL(file);
+
+    // Upload
+    const formData = new FormData();
+    formData.append('image', file);
+
+    try {
+        const res = await authFetch('/api/upload_image', {
+            method: 'POST',
+            body: formData
+        });
+        const data = await res.json();
+        if (data.ok) {
+            // Notify server that user sent an image
+            socket.emit('user_image', { url: data.url, description: data.description });
+        } else {
+            alert('图片上传失败');
+        }
+    } catch (err) {
+        console.error(err);
+        alert('图片上传出错');
+    }
+
+    // Reset input
+    this.value = '';
+});
+
+/* ════════════════════════
+   MENTION SYSTEM (@ Functionality)
+════════════════════════ */
+const mentionList = document.getElementById('mention-list');
+const groupInput = document.getElementById('msg-input-group');
+let mentionIndex = -1;
+let mentionFilter = '';
+
+const MENTION_ROLES = [
+    { id: 'ENFP', name: '暖暖 (ENFP)' },
+    { id: 'INFP', name: '小沈 (INFP)' },
+    { id: 'ENTP', name: '老程 (ENTP)' },
+    { id: 'ENTJ', name: '王姐 (ENTJ)' },
+    { id: 'ESTJ', name: '李姐 (ESTJ)' },
+    { id: 'ENFJ', name: '赵老师 (ENFJ)' }
+];
+
+function showMentionList(filter = '') {
+    mentionList.innerHTML = '';
+    const filtered = MENTION_ROLES.filter(r => r.name.toLowerCase().includes(filter.toLowerCase()) || r.id.toLowerCase().includes(filter.toLowerCase()));
+    
+    if (filtered.length === 0) {
+        hideMentionList();
+        return;
+    }
+
+    filtered.forEach((r, idx) => {
+        const item = document.createElement('div');
+        item.className = 'mention-item';
+        if (idx === 0) item.classList.add('selected');
+        item.dataset.role = r.id;
+        item.innerHTML = `
+            <div class="mention-avatar ${r.id}">${AVATARS[r.id]}</div>
+            <div>${r.name}</div>
+        `;
+        item.onclick = () => selectMention(r.id);
+        mentionList.appendChild(item);
+    });
+
+    // Position above the input caret (Simplified: just above input box)
+    // Ideally we calculate caret position but fixed bottom is fine for now
+    mentionList.classList.add('visible');
+    mentionIndex = 0;
+}
+
+function hideMentionList() {
+    mentionList.classList.remove('visible');
+    mentionIndex = -1;
+}
+
+function selectMention(role) {
+    const val = groupInput.value;
+    const lastAt = val.lastIndexOf('@');
+    if (lastAt !== -1) {
+        groupInput.value = val.substring(0, lastAt) + '@' + role + ' ' + val.substring(groupInput.selectionEnd);
+        groupInput.focus();
+    }
+    hideMentionList();
+}
+
+// Listen to input for @
+groupInput.addEventListener('input', (e) => {
+    const val = e.target.value;
+    const cursorPos = e.target.selectionEnd;
+    
+    // Find if we are typing a mention
+    // Look backwards from cursor
+    const sub = val.substring(0, cursorPos);
+    const lastAt = sub.lastIndexOf('@');
+    
+    if (lastAt !== -1) {
+        // Check if there's a space before @ (or it's start of line)
+        const charBefore = lastAt > 0 ? sub[lastAt-1] : ' ';
+        if (charBefore === ' ' || charBefore === '\n') {
+            // Get filter text
+            const filter = sub.substring(lastAt + 1);
+            // If filter contains space, assume mention ended
+            if (!filter.includes(' ')) {
+                showMentionList(filter);
+                return;
+            }
+        }
+    }
+    hideMentionList();
+});
+
+// Keyboard navigation for mention list
+    groupInput.addEventListener('keydown', (e) => {
+        if (!mentionList.classList.contains('visible')) {
+            return; // Let the generic handler below take care of Enter
+        }
+
+        const items = mentionList.querySelectorAll('.mention-item');
+
+        if (e.key === 'ArrowDown') {
+            e.preventDefault();
+            mentionIndex = (mentionIndex + 1) % items.length;
+            updateSelection(items);
+        } else if (e.key === 'ArrowUp') {
+            e.preventDefault();
+            mentionIndex = (mentionIndex - 1 + items.length) % items.length;
+            updateSelection(items);
+        } else if (e.key === 'Enter' || e.key === 'Tab') {
+            e.preventDefault();
+            e.stopImmediatePropagation(); // Prevent generic handler from also sending
+            if (mentionIndex >= 0 && items[mentionIndex]) {
+                selectMention(items[mentionIndex].dataset.role);
+            }
+        } else if (e.key === 'Escape') {
+            hideMentionList();
+        }
+    });
+
+function updateSelection(items) {
+    items.forEach(i => i.classList.remove('selected'));
+    if (items[mentionIndex]) items[mentionIndex].classList.add('selected');
+}
+
+function bindSocketEvents() {
+
+socket.on('connect', () => {
+    console.log('[Socket] Connected!', socket.id);
+    document.getElementById('save-status') && (document.getElementById('save-status').textContent = '✅ 已连接服务器');
+});
+socket.on('disconnect', () => {
+    document.getElementById('save-status') && (document.getElementById('save-status').textContent = '❌ 连接断开，重连中...');
+});
+socket.on('connect_error', (err) => { console.log('[Socket] Connect Error:', err); });
+
+socket.on('ai_message', ({ role, content, mode, image, audio }) => {
+    console.log('[Frontend] Received ai_message:', { role, content, mode, image, audio });
+    const tb = document.getElementById('typing-bar');
+    clearTimeout(groupTypingTimer);
+    tb.innerHTML = `<span style="color:var(--${role.toLowerCase()})">${role}</span> 正在输入…`;
+    tb.classList.add('visible');
+    groupTypingTimer = setTimeout(() => { tb.textContent = ''; tb.classList.remove('visible'); }, 3000);
+
+    if ((mode === 'full' || mode === 'append') && (content || image || audio)) {
+        appendGroupBubble(role, content, false, image, audio);
+        addUnread('group');
+        playNotificationSound();
+    }
+});
+
+socket.on('dm_reply', ({ role, content, mode, image, audio }) => {
+    console.log('[Frontend] Received dm_reply:', { role, content, mode, image, audio });
+    const bar = document.getElementById('typing-' + role);
+    if (bar) {
+        clearTimeout(dmTypingTimers[role]);
+        bar.textContent = '正在输入…'; bar.style.color = 'var(--text-muted)'; bar.style.fontSize = '11.5px';
+        dmTypingTimers[role] = setTimeout(() => { bar.textContent = ''; }, 3000);
+    }
+    if ((mode === 'full' || mode === 'append') && (content || image || audio)) {
+        appendDMBubble(role, role, content, false, image, audio);
+        addUnread('dm-' + role);
+        if (bar) { clearTimeout(dmTypingTimers[role]); bar.textContent = ''; }
+        playNotificationSound();
+    }
+});
+
+/* 🌟 新增：监听后台主动私聊消息 🌟 */
+socket.on('new_dm_message', ({ role, content }) => {
+    console.log('[Frontend] Received new_dm_message:', { role, content });
+    appendDMBubble(role, role, content);
+    addUnread('dm-' + role);
+    playNotificationSound();
+});
+
+/* 🌟 新增：监听后台 AI 偷偷发的朋友圈 🌟 */
+socket.on('new_moment', (momentData) => {
+    momentsData.unshift(momentData);
+    renderMoments();
+    addUnread('moments');
+});
+
+socket.on('new_comment', (commentData) => {
+    const moment = momentsData.find(m => m.id === commentData.moment_id);
+    if (moment) {
+        if (!moment.comments) moment.comments = [];
+        moment.comments.push(commentData);
+        renderMoments();
+        addUnread('moments');
+    }
+});
+
+/* AI 点赞朋友圈 → 实时更新点赙数 */
+socket.on('moment_update', (data) => {
+    const moment = momentsData.find(m => m.id === data.id);
+    if (moment) {
+        moment.likes = data.likes;
+        moment.liked_by_user = data.liked_by_user;
+        renderMoments();
+    }
+});
+
+} // end bindSocketEvents
+
+/* ════════════════════════
+   MOMENTS
+════════════════════════ */
+const momentsData = [];
+let generatingMoments = false;
+
+function generateMoments() {
+    if (generatingMoments) return;
+    generatingMoments = true;
+    const btn = document.getElementById('gen-moments-btn');
+    btn.innerHTML = '<span class="spinner"></span>'; btn.disabled = true;
+
+    // 后端通过 socket new_moment 事件推送结果（含图片/语音/AI互动）
+    // 这里只需触发生成，30秒后恢复按钮（防止用户以为卡住了）
+    authFetch('/api/moments/generate', { method: 'POST' })
+        .catch(err => console.error('朋友圈生成失败:', err));
+
+    setTimeout(() => {
+        btn.innerHTML = '↻'; btn.disabled = false; generatingMoments = false;
+    }, 30000);
+}
+
+function toggleLike(momentId) {
+    const card = document.querySelector(`[data-moment-id="${momentId}"]`);
+    if (!card) return;
+    const btn = card.querySelector('.like-btn');
+    const liked = btn.classList.contains('liked');
+
+    authFetch('/api/moments/like', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ moment_id: momentId, like: !liked }),
+    }).then(r => r.json()).then(data => {
+        if (data.ok) {
+            const m = momentsData.find(x => x.id === momentId);
+            if (m) { m.likes = data.likes; m.liked_by_user = data.liked_by_user; renderMoments(); }
+        }
+    });
+}
+
+function toggleCommentInput(momentId) {
+    const area = document.getElementById(`comment-input-${momentId}`);
+    if (area) {
+        area.classList.toggle('visible');
+        if (area.classList.contains('visible')) {
+            setTimeout(() => area.querySelector('input').focus(), 100);
+        }
+    }
+}
+
+function submitComment(momentId) {
+    const area = document.getElementById(`comment-input-${momentId}`);
+    if (!area) return;
+    const input = area.querySelector('input');
+    const content = input.value.trim();
+    if (!content) return;
+
+    authFetch('/api/moments/comment', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ moment_id: momentId, content: content }),
+    }).then(r => r.json()).then(data => {
+        if (data.ok) {
+            input.value = '';
+            area.classList.remove('visible');
+        }
+    });
+}
+
+function renderMoments() {
+    const list = document.getElementById('moments-list');
+    if (!momentsData.length) {
+        list.innerHTML = `<div class="moments-empty"><div class="emoji">🌸</div><div>还没有动态，点击右上角刷新</div></div>`;
+        return;
+    }
+    list.innerHTML = '';
+    momentsData.forEach(m => {
+        const card = document.createElement('div'); card.className = 'moment-card'; card.dataset.momentId = m.id; card.dataset.role = m.role;
+        const timeStr = m.created_at ? new Date(m.created_at).toLocaleString('zh-CN', { month:'numeric', day:'numeric', hour:'2-digit', minute:'2-digit' }) : '';
+        const likeNames = (m.likes || []).map(r => ROLE_NAMES[r] || r).join('、');
+
+        // Render comments
+        const comments = m.comments || [];
+        const commentListHtml = comments.map(c =>
+            `<div class="comment-item"><span class="comment-role ${c.role}">${ROLE_NAMES[c.role] || c.role}:</span>${escapeHtml(c.content)}</div>`
+        ).join('');
+        const hasComments = comments.length > 0;
+
+        card.innerHTML = `
+            <div class="moment-header">
+                <div class="moment-avatar ${m.role}">${AVATARS[m.role] || ''}</div>
+                <div class="moment-meta"><div class="moment-name">${ROLE_NAMES[m.role] || m.role}</div><div class="moment-time">${timeStr}</div></div>
+            </div>
+            <div class="moment-content">${escapeHtml(m.content)}</div>
+            ${m.audio ? `
+                <div class="voice-bubble" style="margin-bottom:10px;width:140px" onclick="playMomentAudio(this, '${m.audio}')">
+                    <div class="voice-icon"></div>
+                    <div class="voice-duration">🔊</div>
+                    <audio src="${m.audio}" style="display:none"></audio>
+                </div>
+            ` : ''}
+            ${m.image ? `<img src="${m.image}" class="moment-image" onclick="window.open(this.src, '_blank')">` : ''}
+            <div class="moment-actions">
+                <button class="action-btn ${m.liked_by_user ? 'liked' : ''} like-btn" onclick="toggleLike('${m.id}')">
+                    <span class="icon">${m.liked_by_user ? '❤️' : '🤍'}</span>
+                    <span>${(m.likes || []).length > 0 ? (m.likes || []).length : '点赞'}</span>
+                </button>
+                <button class="action-btn" onclick="toggleCommentInput('${m.id}')">
+                    <span class="icon">💬</span>
+                    <span>评论</span>
+                </button>
+                ${likeNames ? `<span class="like-names">❤️ ${escapeHtml(likeNames)}</span>` : ''}
+            </div>
+            <div class="comment-section ${hasComments ? 'has-comments' : ''}" id="comments-${m.id}">
+                <div class="comment-list" id="comment-list-${m.id}">
+                    ${commentListHtml}
+                </div>
+            </div>
+            <div class="comment-input-area" id="comment-input-${m.id}">
+                <input type="text" class="comment-input" placeholder="评论..." onkeydown="if(event.key==='Enter') submitComment('${m.id}')">
+                <button class="comment-submit" onclick="submitComment('${m.id}')">发送</button>
+            </div>
+        `;
+        list.appendChild(card);
+    });
+}
+
+function escapeHtml(str) { const d = document.createElement('div'); d.textContent = str; return d.innerHTML; }
+
+function playMomentAudio(el, url) {
+    const audio = el.querySelector('audio');
+    if (audio.paused) {
+        document.querySelectorAll('audio').forEach(a => {
+            if (a !== audio) {
+                a.pause();
+                a.currentTime = 0;
+                a.parentElement.classList.remove('playing');
+            }
+        });
+        audio.play();
+        el.classList.add('playing');
+        audio.onended = () => el.classList.remove('playing');
+        // Try to get duration
+        if (!el.dataset.hasDuration) {
+            audio.onloadedmetadata = () => {
+                let sec = Math.round(audio.duration);
+                if (sec < 1) sec = 1;
+                el.querySelector('.voice-duration').textContent = sec + '"';
+                el.style.width = (80 + Math.min((sec / 60) * 120, 120)) + 'px';
+                el.dataset.hasDuration = "true";
+            };
+        }
+    } else {
+        audio.pause();
+        el.classList.remove('playing');
+    }
+}
+
+// moments 初始加载已移至 initSocketAndApp()
+
+/* ════════════════════════
+   SETTINGS MODAL
+════════════════════════ */
+// Remove old openModal definition if exists, use the one below
+function closeModal() { document.getElementById('modal-overlay').classList.remove('open'); }
+function handleOverlayClick(e) { if (e.target === document.getElementById('modal-overlay')) closeModal(); }
+function switchTab(name) {
+    document.querySelectorAll('.modal-tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    document.querySelector(`.tab-${name}`).classList.add('active');
+    document.getElementById(`panel-${name}`).classList.add('active');
+}
+function togglePersona(role) {
+    const box = document.getElementById(`persona-${role}`);
+    box.classList.toggle('expanded');
+    box.nextElementSibling.textContent = box.classList.contains('expanded') ? '收起 ▴' : '展开查看全部 ▾';
+}
+const ROLES = ['ENFP', 'INFP', 'ENTP', 'ENTJ', 'ESTJ', 'ENFJ'];
+const DEFAULTS = {
+    ENFP:   { prompt_extra:'', temperature:1.15, max_tokens:220, trigger_prob:0.85 },
+    INFP:   { prompt_extra:'', temperature:1.10, max_tokens:220, trigger_prob:0.65 },
+    ENTP:   { prompt_extra:'', temperature:1.15, max_tokens:220, trigger_prob:0.75 },
+    ENTJ:   { prompt_extra:'', temperature:1.0,  max_tokens:180, trigger_prob:0.60 },
+    ESTJ:   { prompt_extra:'', temperature:0.95, max_tokens:180, trigger_prob:0.65 },
+    ENFJ:   { prompt_extra:'', temperature:1.05, max_tokens:200, trigger_prob:0.80 },
+    global: { share_prob:0.28, drift_prob:0.22, chain_prob:0.42,
+              censor_entp:true, proactive_min:15, proactive_max:45, max_tokens: 50 },
+};
+
+function openModal() {
+    authFetch('/api/config')
+        .then(r => r.json())
+        .then(({ config, persona_base }) => {
+            document.getElementById('modal-overlay').classList.add('open');
+            ROLES.forEach(role => {
+                const el = document.getElementById(`persona-${role}`);
+                if (el) el.textContent = persona_base[role] || '（人设加载中...）';
+                
+                // Update slider values from config
+                const rc = config[role] || {};
+                setSlider(`temp-${role}`, `tempval-${role}`, rc.temperature);
+                setSlider(`prob-${role}`, `probval-${role}`, rc.trigger_prob, '%', 100);
+                const ta = document.getElementById(`extra-${role}`);
+                if (ta) ta.value = rc.prompt_extra || '';
+            });
+            
+            // Global settings
+            const gc = config.global || {};
+            setSlider('share-prob', 'shareval', gc.share_prob, '%', 100);
+            setSlider('drift-prob', 'driftval', gc.drift_prob, '%', 100);
+            setSlider('chain-prob', 'chainval', gc.chain_prob);
+            setSlider('global-tokens', 'global-tokens-val', gc.max_tokens);
+            
+            document.getElementById('save-status').textContent = '调整参数后点击保存立即生效，无需重启服务';
+            document.getElementById('save-status').className = '';
+        })
+        .catch(err => {
+            console.error('Config load failed:', err);
+            document.getElementById('save-status').textContent = '❌ 配置加载失败';
+        });
+}
+
+function applyConfigToUI(cfg) {
+    ROLES.forEach(role => {
+        const rc = cfg[role] || {};
+        setSlider(`temp-${role}`,  `tempval-${role}`,  rc.temperature  ?? 1.15);
+        setSlider(`prob-${role}`,  `probval-${role}`,  rc.trigger_prob ?? 0.6, '%', 100);
+        const ta = document.getElementById(`extra-${role}`);
+        if (ta) ta.value = rc.prompt_extra || '';
+    });
+    const gc = cfg.global || {};
+    setSlider('share-prob', 'shareval',  gc.share_prob ?? 0.28, '%', 100);
+    setSlider('drift-prob', 'driftval',  gc.drift_prob ?? 0.22, '%', 100);
+    setSlider('chain-prob', 'chainval',  gc.chain_prob ?? 0.42);
+    setSlider('global-tokens', 'global-tokens-val', gc.max_tokens ?? 50);
+    const toggle = document.getElementById('censor-toggle');
+    if (toggle) toggle.checked = gc.censor_entp !== false;
+}
+
+function setSlider(sliderId, valId, value, suffix='', mult=1) {
+    const el = document.getElementById(sliderId);
+    const vl = document.getElementById(valId);
+    if (!el || !vl) return;
+    el.value = value;
+    vl.textContent = suffix === '%' ? Math.round(value * mult) + '%' : parseFloat(value).toFixed(2);
+}
+
+function syncVal(el, valId, suffix='', mult=1) {
+    const vl = document.getElementById(valId);
+    if (!vl) return;
+    const v = parseFloat(el.value);
+    vl.textContent = suffix === '%' ? Math.round(v * mult) + '%' : v.toFixed(2);
+}
+
+function collectConfig() {
+    const payload = {};
+    ROLES.forEach(role => {
+        const extraEl = document.getElementById(`extra-${role}`);
+        const tempEl = document.getElementById(`temp-${role}`);
+        const probEl = document.getElementById(`prob-${role}`);
+        
+        if (extraEl && tempEl && probEl) {
+            payload[role] = {
+                prompt_extra: extraEl.value.trim(),
+                temperature:  parseFloat(tempEl.value),
+                trigger_prob: parseFloat(probEl.value),
+            };
+        }
+    });
+    payload.global = {
+        share_prob:  parseFloat(document.getElementById('share-prob').value),
+        drift_prob:  parseFloat(document.getElementById('drift-prob').value),
+        chain_prob:  parseFloat(document.getElementById('chain-prob').value),
+        censor_entp: document.getElementById('censor-toggle') ? document.getElementById('censor-toggle').checked : true,
+        max_tokens:  parseInt(document.getElementById('global-tokens').value)
+    };
+    payload.global_max_tokens = parseInt(document.getElementById('global-tokens').value);
+    return payload;
+}
+
+function saveConfig() {
+    const btn = document.getElementById('save-btn');
+    const st  = document.getElementById('save-status');
+    btn.disabled = true; btn.textContent = '保存中…';
+    
+    const configData = collectConfig();
+    console.log('[Frontend] Saving config:', configData);
+
+    authFetch('/api/config', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(configData),
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.ok) { st.textContent = '✓ 已保存，下一条消息立即生效'; st.className = 'ok'; }
+        else throw new Error();
+    })
+    .catch((e) => { 
+        console.error(e);
+        st.textContent = '✗ 保存失败'; st.className = 'err'; 
+    })
+    .finally(() => { btn.disabled = false; btn.textContent = '保存'; });
+}
+
+function resetConfig() {
+    applyConfigToUI(DEFAULTS);
+    document.getElementById('save-status').textContent = '已恢复默认值，点击保存生效';
+    document.getElementById('save-status').className = '';
+}
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
+
+/* ════════════════════════
+   MOBILE SIDEBAR
+════════════════════════ */
+function openSidebar() {
+    document.getElementById('sidebar').classList.add('open');
+    document.getElementById('sidebar-overlay').classList.add('open');
+}
+function closeSidebar() {
+    document.getElementById('sidebar').classList.remove('open');
+    document.getElementById('sidebar-overlay').classList.remove('open');
+}
+
+// On mobile, close sidebar after nav item tap
+const origSwitchPanel = switchPanel;
+window.switchPanel = function(name) {
+    origSwitchPanel(name);
+    closeSidebar();
+};
+
+// Show/hide hamburger buttons based on screen size
+    function updateHamburgers() {
+        const isMobile = window.matchMedia('(max-width: 680px)').matches;
+        ['ham-ENFP','ham-INFP','ham-ENTP','ham-ENTJ','ham-ESTJ'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.style.display = isMobile ? 'flex' : 'none';
+        });
+    }
+updateHamburgers();
+window.addEventListener('resize', updateHamburgers);
+
+/* ════════════════════════
+   DM IMAGE UPLOAD
+════════════════════════ */
+document.querySelectorAll('.dm-upload-file').forEach(input => {
+    input.addEventListener('change', async function(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+        const role = this.dataset.role;
+
+        // Show preview immediately
+        const reader = new FileReader();
+        reader.onload = function(evt) {
+            appendDMBubble(role, 'INFJ', '', false, evt.target.result);
+        };
+        reader.readAsDataURL(file);
+
+        // Upload to server
+        const formData = new FormData();
+        formData.append('image', file);
+        try {
+            const res = await authFetch('/api/upload_image', { method: 'POST', body: formData });
+            const data = await res.json();
+            if (data.ok) {
+                socket.emit('dm_message', { role, content: '', image: data.url, image_desc: data.description });
+            } else {
+                alert('图片上传失败');
+            }
+        } catch (err) {
+            console.error(err);
+            alert('图片上传出错');
+        }
+        this.value = '';
+    });
+});
+    // 🌟 移动端软键盘回车发送
+    document.querySelectorAll('.msg-input, .comment-input').forEach(input => {
+        input.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                // 找到旁边的发送按钮并点击
+                const sendBtn = this.parentElement.nextElementSibling;
+                if (sendBtn && sendBtn.classList.contains('send-btn')) {
+                    sendBtn.click();
+                } else if (this.classList.contains('comment-input')) {
+                    // 评论框的发送按钮可能在旁边
+                    const commentBtn = this.nextElementSibling;
+                    if (commentBtn && commentBtn.classList.contains('comment-submit')) commentBtn.click();
+                }
+                this.blur(); // 收起键盘
+            }
+        });
+    });
+
+    // 强制刷新图片缓存 (版本4 - 修复)
+    function refreshAvatarCache() {
+        const timestamp = new Date().getTime();
+        document.querySelectorAll('img[src*="/static/images/avatar_"]').forEach(img => {
+            const src = img.src.split('?')[0];
+            img.src = `${src}?v=${timestamp}`;
+        });
+        // Special handling for INFJ cover which might not be an img tag directly in some versions
+        const coverAv = document.getElementById('hav-INFJ-cover');
+        if (coverAv) {
+            const img = coverAv.querySelector('img');
+            if (img) {
+                const src = img.src.split('?')[0];
+                img.src = `${src}?v=${timestamp}`;
+            }
+        }
+    }
+    
+    // Call this after avatars are initialized
+    setTimeout(refreshAvatarCache, 1500);
+
+    
+
+    /* ════════════════════════
+       VOICE MESSAGE LOGIC (Refactored)
+    ════════════════════════ */
+    let recorder = null;
+    let chunks = [];
+    let voiceStart = 0;
+    let voiceStream = null;
+    let isPressed = false;
+
+    function startRecording(e, type, targetRole = null) {
+        e.preventDefault();
+        isPressed = true;
+        const btnId = type === 'group' ? 'voice-btn-group' : `voice-btn-dm-${targetRole}`;
+        const btn = document.getElementById(btnId);
+        btn.style.color = 'red';
+        btn.style.transform = 'scale(1.2)';
+        
+        navigator.mediaDevices.getUserMedia({ audio: true })
+        .then(stream => {
+            if (!isPressed) {
+                stream.getTracks().forEach(t => t.stop());
+                return;
+            }
+            voiceStream = stream;
+            
+            let options = {};
+            if (MediaRecorder.isTypeSupported('audio/webm;codecs=opus')) {
+                options = { mimeType: 'audio/webm;codecs=opus' };
+            } else if (MediaRecorder.isTypeSupported('audio/mp4')) {
+                options = { mimeType: 'audio/mp4' };
+            }
+            
+            try {
+                recorder = new MediaRecorder(stream, options);
+            } catch (e) {
+                recorder = new MediaRecorder(stream);
+            }
+            
+            chunks = [];
+            voiceStart = Date.now();
+            recorder.ondataavailable = e => chunks.push(e.data);
+            recorder.start();
+            
+            const inputId = type === 'group' ? 'msg-input-group' : `msg-input-dm-${targetRole}`;
+            const input = document.getElementById(inputId);
+            input.placeholder = "正在录音... 松开发送";
+        }).catch(err => {
+            console.error("Mic Error:", err);
+            alert("无法访问麦克风: " + err.message);
+            isPressed = false;
+            btn.style.color = 'var(--text)';
+            btn.style.transform = 'scale(1)';
+        });
+    }
+
+    function stopRecording(e, type, targetRole = null) {
+        e.preventDefault();
+        isPressed = false;
+        
+        const btnId = type === 'group' ? 'voice-btn-group' : `voice-btn-dm-${targetRole}`;
+        const btn = document.getElementById(btnId);
+        btn.style.color = 'var(--text)';
+        btn.style.transform = 'scale(1)';
+        
+        const inputId = type === 'group' ? 'msg-input-group' : `msg-input-dm-${targetRole}`;
+        const input = document.getElementById(inputId);
+        input.placeholder = type === 'group' ? "发消息给群聊…" : `发消息给 ${targetRole}…`;
+
+        if (!recorder || recorder.state === 'inactive') return;
+        
+        if (Date.now() - voiceStart < 500) {
+            recorder.stop();
+            if (voiceStream) voiceStream.getTracks().forEach(t => t.stop());
+            return;
+        }
+
+        recorder.stop();
+        recorder.onstop = async () => {
+            const mimeType = recorder.mimeType || 'audio/webm';
+            const blob = new Blob(chunks, { type: mimeType });
+            const localAudioUrl = URL.createObjectURL(blob);
+            
+            if (type === 'group') {
+                appendGroupBubble('INFJ', '', false, '', localAudioUrl);
+            } else {
+                appendDMBubble(targetRole, 'INFJ', '', false, '', localAudioUrl);
+            }
+            
+            await new Promise(r => setTimeout(r, 50));
+            
+            const winId = type === 'group' ? 'chat-window-group' : `chat-window-dm-${targetRole}`;
+            const win = document.getElementById(winId);
+            const bubbles = win.querySelectorAll('.msg-group.self .bubble');
+            const currentBubble = bubbles[bubbles.length - 1];
+            
+            const statusDiv = document.createElement('div');
+            statusDiv.className = 'voice-status-text';
+            statusDiv.style.fontSize = '12px';
+            statusDiv.style.marginTop = '6px';
+            statusDiv.style.color = 'rgba(255,255,255,0.7)';
+            statusDiv.style.borderTop = '1px solid rgba(255,255,255,0.1)';
+            statusDiv.style.paddingTop = '4px';
+            statusDiv.textContent = '🎤 正在转文字...';
+            currentBubble.appendChild(statusDiv);
+            
+            win.scrollTo({ top: win.scrollHeight, behavior: 'smooth' });
+
+            const formData = new FormData();
+            let ext = '.webm';
+            if (mimeType.includes('mp4')) ext = '.mp4';
+            else if (mimeType.includes('aac')) ext = '.aac';
+            else if (mimeType.includes('wav')) ext = '.wav';
+            
+            formData.append('audio', blob, `${type}_voice${ext}`);
+
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 60000);
+
+            try {
+                const res = await fetch('/api/voice_to_text', { 
+                    method: 'POST', 
+                    body: formData,
+                    signal: controller.signal
+                });
+                clearTimeout(timeoutId);
+                const data = await res.json();
+                
+                if (data.ok && data.text) {
+                    statusDiv.textContent = data.text;
+                    statusDiv.style.color = 'var(--text)';
+                    statusDiv.style.fontSize = '14px';
+                    statusDiv.style.borderTop = '1px solid var(--border2)';
+                    
+                    if (type === 'group') {
+                        socket.emit('user_message', { content: data.text });
+                    } else {
+                        socket.emit('dm_message', { role: targetRole, content: data.text });
+                    }
+                } else {
+                    const err = (data && data.error) ? data.error : '未知错误';
+                    statusDiv.innerHTML = `<span style="color:#ff5555">❌ 识别失败: ${err}</span>`;
+                }
+            } catch (err) {
+                clearTimeout(timeoutId);
+                if (statusDiv) {
+                    statusDiv.innerHTML = `<span style="color:#ff5555">❌ ${err.name === 'AbortError' ? '请求超时' : '网络错误'}</span>`;
+                }
+            }
+            
+            if (voiceStream) voiceStream.getTracks().forEach(t => t.stop());
+            recorder = null;
+            voiceStream = null;
+        };
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        // Bind Group Voice Button
+        const gvBtn = document.getElementById('voice-btn-group');
+        if (gvBtn) {
+            gvBtn.addEventListener('mousedown', (e) => startRecording(e, 'group'));
+            gvBtn.addEventListener('touchstart', (e) => startRecording(e, 'group'), { passive: false });
+            gvBtn.addEventListener('mouseup', (e) => stopRecording(e, 'group'));
+            gvBtn.addEventListener('touchend', (e) => stopRecording(e, 'group'));
+            gvBtn.addEventListener('mouseleave', (e) => stopRecording(e, 'group'));
+            gvBtn.addEventListener('touchcancel', (e) => stopRecording(e, 'group'));
+            gvBtn.oncontextmenu = (e) => { e.preventDefault(); e.stopPropagation(); return false; };
+        }
+
+        // Bind DM Voice Buttons
+        document.querySelectorAll('.dm-voice-btn').forEach(btn => {
+            const role = btn.dataset.role;
+            btn.addEventListener('mousedown', (e) => startRecording(e, 'dm', role));
+            btn.addEventListener('touchstart', (e) => startRecording(e, 'dm', role), { passive: false });
+            btn.addEventListener('mouseup', (e) => stopRecording(e, 'dm', role));
+            btn.addEventListener('touchend', (e) => stopRecording(e, 'dm', role));
+            btn.addEventListener('mouseleave', (e) => stopRecording(e, 'dm', role));
+            btn.addEventListener('touchcancel', (e) => stopRecording(e, 'dm', role));
+            btn.oncontextmenu = (e) => { e.preventDefault(); e.stopPropagation(); return false; };
+        });
+    });
+</script>
+
+<!-- ══ 登录弹窗 ══════════════════════════════════════════ -->
+<div id="auth-modal" style="
+  display:none; position:fixed; inset:0; z-index:9999;
+  background:rgba(0,0,0,0.75); backdrop-filter:blur(12px);
+  align-items:center; justify-content:center;
+">
+  <div style="
+    width:340px; background:#13162a; border:1px solid rgba(255,255,255,0.1);
+    border-radius:20px; padding:36px 32px; box-shadow:0 32px 80px rgba(0,0,0,0.6);
+    position:relative; overflow:hidden;
+  ">
+    <!-- 顶部彩条 -->
+    <div style="position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,#ff8c42,#c97ef5,#5bc8f5);"></div>
+
+    <div style="text-align:center;margin-bottom:24px">
+      <div style="font-size:36px;margin-bottom:10px">🏥</div>
+      <div style="font-size:18px;font-weight:700;color:#e8e9f5;font-family:'Noto Serif SC',serif">MBTI 精神病院</div>
+      <div style="font-size:12px;color:#8a8aac;margin-top:4px">你的专属朋友圈模拟器</div>
+    </div>
+
+    <!-- Tab -->
+    <div style="display:flex;gap:6px;margin-bottom:20px;background:rgba(255,255,255,0.05);border-radius:10px;padding:4px">
+      <button id="auth-tab-login" onclick="switchAuthTab('login')" style="
+        flex:1;padding:8px;border:none;border-radius:8px;cursor:pointer;font-size:13px;
+        font-weight:600;font-family:inherit;transition:all 0.2s;
+        background:#6c7fff;color:#fff;
+      ">登录</button>
+      <button id="auth-tab-reg" onclick="switchAuthTab('register')" style="
+        flex:1;padding:8px;border:none;border-radius:8px;cursor:pointer;font-size:13px;
+        font-weight:600;font-family:inherit;transition:all 0.2s;
+        background:transparent;color:#8a8aac;
+      ">注册</button>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:10px">
+      <input id="auth-username" type="text" placeholder="用户名" maxlength="20" style="
+        padding:11px 14px;border:1.5px solid rgba(255,255,255,0.1);border-radius:9px;
+        background:rgba(255,255,255,0.05);color:#e8e9f5;font-size:13.5px;
+        font-family:inherit;outline:none;transition:border-color 0.2s;
+      " onfocus="this.style.borderColor='#6c7fff'" onblur="this.style.borderColor='rgba(255,255,255,0.1)'">
+      <input id="auth-password" type="password" placeholder="密码（至少 6 位）" style="
+        padding:11px 14px;border:1.5px solid rgba(255,255,255,0.1);border-radius:9px;
+        background:rgba(255,255,255,0.05);color:#e8e9f5;font-size:13.5px;
+        font-family:inherit;outline:none;transition:border-color 0.2s;
+      " onfocus="this.style.borderColor='#6c7fff'" onblur="this.style.borderColor='rgba(255,255,255,0.1)'"
+        onkeydown="if(event.key==='Enter') submitAuth(document.getElementById('auth-submit').dataset.tab)">
+      <div id="auth-error" style="color:#fb7185;font-size:12px;min-height:16px;text-align:center;font-weight:500"></div>
+      <button id="auth-submit" data-tab="login" onclick="submitAuth(this.dataset.tab)" style="
+        padding:12px;background:#6c7fff;color:#fff;border:none;border-radius:9px;
+        font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;
+        transition:all 0.18s;box-shadow:0 3px 12px rgba(108,127,255,0.35);
+      " onmouseover="this.style.opacity=0.85" onmouseout="this.style.opacity=1">登录</button>
+    </div>
+  </div>
+</div>
+</body>
+</html>

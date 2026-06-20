@@ -1,0 +1,5 @@
+{
+  "_comment": "此项目使用 Render 部署，不支持 Vercel（Vercel 不支持 WebSocket 长连接 + 后台线程）",
+  "_deploy": "https://render.com",
+  "_start_command": "见 Procfile"
+}

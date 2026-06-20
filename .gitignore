@@ -1,0 +1,29 @@
+# 环境变量（含 API Key，绝对不上传）
+.env
+
+# 数据库文件（本地数据，不上传）
+*.db
+*.db-shm
+*.db-wal
+
+# 生成的媒体文件（运行时产生，不上传）
+static/audio/
+static/uploads/
+static/temp_audio/
+
+# Python 缓存
+__pycache__/
+*.py[cod]
+*.pyo
+.pytest_cache/
+
+# 日志
+*.log
+
+# IDE
+.idea/
+.vscode/
+.trae/
+
+# Vercel（已废弃，改用 Render）
+.vercel/
