@@ -1052,6 +1052,10 @@ def _require_auth():
 def index(): return render_template("index.html")
 
 
+@app.route("/health")
+def health(): return jsonify({"status": "ok"}), 200
+
+
 @app.route("/api/config", methods=["GET"])
 def get_config(): return jsonify({"config": CUSTOM_CONFIG, "persona_base": PERSONA_BASE})
 
