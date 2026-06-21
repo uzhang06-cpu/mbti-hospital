@@ -42,7 +42,6 @@
     --estj:  #00b4ad;
     --enfj:  #ffb020;
     --infj:  #4fd896;
-    --xiaoyu:#ff7eb3;
     --accent:#6c7fff;
 
     /* ── Bubble Tints ── */
@@ -53,7 +52,6 @@
     --tint-estj: rgba(0,180,173,0.08);
     --tint-enfj: rgba(255,176,32,0.08);
     --tint-infj: rgba(79,216,150,0.08);
-    --tint-xiaoyu: rgba(255,126,179,0.08);
 
     /* ── Border Tints ── */
     --b-enfp: rgba(255,140,66,0.25);
@@ -327,10 +325,6 @@ body.light #theme-toggle:hover { background: rgba(0,0,0,0.09); }
 .nav-item#nav-dm-ESTJ.active::before { background: linear-gradient(180deg, #40c8c0, #008880); box-shadow: 0 0 12px var(--glow-estj); }
 .nav-item#nav-dm-ENFJ.active::before { background: linear-gradient(180deg, #ffd050, #e09000); box-shadow: 0 0 12px var(--glow-enfj); }
 .nav-item#nav-moments.active::before { background: linear-gradient(180deg, #f8a0fb, #e84070); box-shadow: 0 0 12px rgba(248,80,160,0.55); }
-.nav-item#nav-dm-XIAOYU.active::before { background: linear-gradient(180deg, #ffb0d0, #ff5090); box-shadow: 0 0 12px rgba(255,126,179,0.55); }
-.msg-avatar.XIAOYU { background: linear-gradient(135deg, #ff9dc8, #ff5090); }
-.bubble-col .msg-bubble.XIAOYU { background: var(--tint-xiaoyu); border-color: rgba(255,126,179,0.22); }
-.msg-sender.XIAOYU { color: var(--xiaoyu); }
 
 /* Active nav name */
 .nav-item.active .nav-name { color: #c8ceff; }
@@ -1359,28 +1353,6 @@ body.light .voice-bubble:hover { background: rgba(0,0,0,0.09); }
             </div>
             <span class="nav-badge" id="badge-dm-ENFJ"></span>
         </div>
-
-        <div class="nav-divider"></div>
-
-        <div class="nav-section-label">真实朋友</div>
-        <div class="nav-item" onclick="switchPanel('dm-XIAOYU')" id="nav-dm-XIAOYU">
-            <div class="nav-avatar XIAOYU" id="nav-av-XIAOYU"></div>
-            <div class="nav-info">
-                <div class="nav-name">小雨</div>
-                <div class="nav-preview">研究生 · 夜猫子</div>
-            </div>
-            <span class="nav-badge" id="badge-dm-XIAOYU"></span>
-        </div>
-
-        <div class="nav-divider"></div>
-
-        <div class="nav-item" onclick="switchPanel('moments')" id="nav-moments">
-            <div class="nav-avatar moments" id="nav-av-moments"></div>
-            <div class="nav-info">
-                <div class="nav-name">朋友圈</div>
-                <div class="nav-preview">查看大家的动态</div>
-            </div>
-        </div>
     </div>
 </div>
 
@@ -1541,29 +1513,6 @@ body.light .voice-bubble:hover { background: rgba(0,0,0,0.09); }
                 <input type="text" class="msg-input" id="msg-input-dm-ENFJ" placeholder="发消息给 赵老师…" autocomplete="off">
             </div>
             <button class="send-btn" onclick="sendDM('ENFJ')">发送</button>
-        </div>
-    </div>
-
-    <div class="panel" id="panel-dm-XIAOYU">
-        <div class="chat-header">
-            <div class="chat-header-left">
-                <div class="chat-header-avatar XIAOYU" id="hav-XIAOYU"></div>
-                <div>
-                    <div class="chat-header-name">小雨</div>
-                    <div class="chat-header-sub">研究生 · ESTJ · 深夜活跃</div>
-                </div>
-            </div>
-            <div class="chat-header-right">
-                <div class="typing-bar-dm" id="typing-XIAOYU"></div>
-                <button class="icon-btn" onclick="openSidebar()" title="菜单" id="ham-XIAOYU">☰</button>
-            </div>
-        </div>
-        <div class="chat-window" id="chat-window-dm-XIAOYU"></div>
-        <div class="input-area">
-            <div class="input-wrap">
-                <input type="text" class="msg-input" id="msg-input-dm-XIAOYU" placeholder="发消息给 小雨…" autocomplete="off">
-            </div>
-            <button class="send-btn" onclick="sendXiaoyu()">发送</button>
         </div>
     </div>
 
@@ -1795,7 +1744,7 @@ body.light .voice-bubble:hover { background: rgba(0,0,0,0.09); }
 const ROLE_NAMES = {
     ENFP: '暖暖', INFP: '小沈', ENTP: '老程',
     ENTJ: '王姐', ESTJ: '李姐', ENFJ: '赵老师', INFJ: '我',
-    XIAOYU: '小雨', USER: '我'
+    USER: '我'
 };
 
 const AVATARS = {
@@ -1815,7 +1764,6 @@ const AVATARS = {
     INFJ: `<img src="/static/avatars/infj.png" style="width:100%;height:100%;object-fit:contain;background:rgba(255,255,255,0.1);padding:4px;">`,
     // 群聊 -> 大师球 - 捕捉一切
     group: `<img src="/static/avatars/group.png" style="width:100%;height:100%;object-fit:contain;background:rgba(255,255,255,0.1);padding:8px;">`,
-    XIAOYU: `<svg viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="g-xy" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#ffb0d0"/><stop offset="100%" stop-color="#ff5090"/></linearGradient></defs><circle cx="40" cy="40" r="40" fill="url(#g-xy)"/><text x="40" y="52" text-anchor="middle" font-size="36" font-family="sans-serif" fill="white" font-weight="600">雨</text></svg>`,
     moments: `<svg viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="g-mom" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#f8a0fb"/><stop offset="100%" stop-color="#e84070"/></linearGradient></defs><circle cx="40" cy="40" r="40" fill="url(#g-mom)"/><ellipse cx="40" cy="24" rx="7" ry="11" fill="rgba(255,255,255,0.85)" transform="rotate(0 40 40)"/><ellipse cx="40" cy="24" rx="7" ry="11" fill="rgba(255,255,255,0.85)" transform="rotate(72 40 40)"/><ellipse cx="40" cy="24" rx="7" ry="11" fill="rgba(255,255,255,0.85)" transform="rotate(144 40 40)"/><ellipse cx="40" cy="24" rx="7" ry="11" fill="rgba(255,255,255,0.85)" transform="rotate(216 40 40)"/><ellipse cx="40" cy="24" rx="7" ry="11" fill="rgba(255,255,255,0.85)" transform="rotate(288 40 40)"/><circle cx="40" cy="40" r="7" fill="rgba(255,220,60,0.95)"/></svg>`
 };
 
@@ -1830,7 +1778,6 @@ function initAvatars() {
     ['nav-av-ENFJ','hav-ENFJ'].forEach(id => { const el = document.getElementById(id); if(el) setAvatar(el, 'ENFJ'); });
     setAvatar(document.getElementById('nav-av-moments'), 'moments');
     setAvatar(document.getElementById('hav-INFJ-cover'), 'INFJ');
-    ['nav-av-XIAOYU','hav-XIAOYU'].forEach(id => { const el = document.getElementById(id); if(el) setAvatar(el, 'XIAOYU'); });
 }
 initAvatars();
 
@@ -1963,18 +1910,6 @@ function initSocketAndApp() {
         }).catch(()=>{});
     });
 
-    authFetch('/api/xiaoyu/history').then(r => r.json()).then(d => {
-        if (d.history) {
-            d.history.forEach(m => {
-                const sender = m.sender === 'USER' ? 'INFJ' : 'XIAOYU';
-                appendDMBubble('XIAOYU', sender, m.content, true);
-            });
-            if (d.history.length > 0) {
-                const last = d.history[d.history.length - 1];
-                updateNavPreview('nav-dm-XIAOYU', last.content || '');
-            }
-        }
-    }).catch(() => {});
 
     authFetch('/api/moments').then(r => r.json()).then(data => {
         if (data.moments) { data.moments.forEach(m => momentsData.push(m)); renderMoments(); }
@@ -2030,7 +1965,7 @@ document.getElementById('date-label-group') && (document.getElementById('date-la
    CHAT RENDERING
 ════════════════════════ */
 let lastGroupRole = null;
-const dmLastRole = { ENFP: null, INFP: null, ENTP: null, ENTJ: null, ESTJ: null, ENFJ: null, XIAOYU: null };
+const dmLastRole = { ENFP: null, INFP: null, ENTP: null, ENTJ: null, ESTJ: null, ENFJ: null };
 
 let isSendingGroup = false;
 function sendGroup() {
@@ -2054,18 +1989,6 @@ function sendDM(role) {
     input.value = '';
 }
 
-function sendXiaoyu() {
-    const input = document.getElementById('msg-input-dm-XIAOYU');
-    const content = input.value.trim();
-    if (!content) return;
-    appendDMBubble('XIAOYU', 'INFJ', content);
-    socket.emit('xiaoyu_message', { content });
-    input.value = '';
-}
-
-document.getElementById('msg-input-dm-XIAOYU')?.addEventListener('keydown', e => {
-    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendXiaoyu(); }
-});
 
 function updateNavPreview(panelId, text, sender = "") {
     const navItem = document.getElementById(panelId);
@@ -2629,21 +2552,6 @@ socket.on('dm_reply', ({ role, content, mode, image, audio }) => {
     }
 });
 
-/* 小雨回复 */
-socket.on('xiaoyu_reply', ({ content, mode }) => {
-    const bar = document.getElementById('typing-XIAOYU');
-    if (bar) {
-        clearTimeout(dmTypingTimers['XIAOYU']);
-        bar.textContent = '正在输入…'; bar.style.color = 'var(--xiaoyu)'; bar.style.fontSize = '11.5px';
-        dmTypingTimers['XIAOYU'] = setTimeout(() => { bar.textContent = ''; }, 3000);
-    }
-    if ((mode === 'full' || !mode) && content) {
-        appendDMBubble('XIAOYU', 'XIAOYU', content);
-        addUnread('dm-XIAOYU');
-        if (bar) { clearTimeout(dmTypingTimers['XIAOYU']); bar.textContent = ''; }
-        playNotificationSound();
-    }
-});
 
 /* 🌟 新增：监听后台主动私聊消息 🌟 */
 socket.on('new_dm_message', ({ role, content }) => {
