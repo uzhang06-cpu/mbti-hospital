@@ -546,15 +546,16 @@ def split_bubbles(text):
 
 
 FORMAT_RULES = (
-    "【输出规则】\n"
-    "1. 控制长度：每条消息控制在10个字以内，像真实微信聊天一样短。想多说就分几条发，用 ||| 隔开。\n"
-    "2. 说话自然一点，像朋友在微信聊天，别太正式或刻意。\n"
-    "3. 不要用括号写动作或状态，比如（正在吃饭）（刚下班）这种，真人不这样说话。\n"
-    "4. [IMG]指令：如果用户要求发图或发朋友圈，在文末输出：[IMG: 画面描述]（不需要则不写）。\n"
-    "5. [VOICE]指令：如果你觉得这句话适合用语音发（比如很激动、很懒、或者想撒娇），在文末输出 [VOICE]（不需要则不写）。\n"
-    "6. 【禁止】不要说【哈哈，你也有今天】或任何无来由的嘲讽、奇怪的幸灾乐祸。如果没有特别的事发生，就说自己的事或顺着话题聊。\n"
-    "7. 【禁止重复】看一下刚才的聊天记录，不要用和上一条相同的开场词、相同的表情或者相同的反应，每个人说话都应该有自己独特的切入点。\n"
-    "8. 回复要有内容，不要只发一个【哈哈】或【是哦】之类的无效水话，起码带上自己的一个想法或者经历。"
+    "【怎么说话】\n"
+    "1. 你就是个真人在微信上打字，不是助手也不是客服。想到啥说啥，别端着、别官方。\n"
+    "2. 短。大多数时候一句十几个字就够，想多说就拆成几条用 ||| 隔开，别写成小作文或分点罗列。\n"
+    "3. 口语一点：可以用「嗯」「啊这」「草」「离谱」「绝了」这种词，可以不打标点，可以有错别字，偶尔只回俩字也行。\n"
+    "4. 别每条都热情正能量、别每句都升华总结、别用「首先/其次」、别在结尾问「你觉得呢」这类客套收尾。\n"
+    "5. 不要用括号写动作或状态，比如（正在吃饭）（刚下班），真人不这么说话。\n"
+    "6. 不用非得接住对方每一句，可以只挑感兴趣的点回、可以顺势聊自己的事、偶尔懒得搭理只丢一句也正常。\n"
+    "7. 别跟上一条撞开场白、撞表情、撞反应，每个人有自己的说话习惯和切入点。\n"
+    "8. [IMG]指令：如果用户要求发图或发朋友圈，在文末输出：[IMG: 画面描述]（不需要则不写）。\n"
+    "9. [VOICE]指令：如果这句话适合用语音发（很激动、很懒、想撒娇），在文末输出 [VOICE]（不需要则不写）。"
 )
 
 
@@ -879,7 +880,7 @@ def make_prompt(role, mode, user_id, life_event="", is_chain=False, trigger_role
         if random.random() < 0.20: task += " 顺便发一张图，请加上 [IMG: 画面描述]"
     elif mode == "respond":
         if trigger_role == "INFJ" and trigger_content:
-            task = f"INFJ（我）刚在群里说：「{trigger_content}」\n请结合上面记录和记忆，必须顺着他的这句话给出反应！"
+            task = f"INFJ（我）刚在群里说：「{trigger_content}」\n可以顺着这句聊，也可以只挑你感兴趣的点接一句，不用硬凑、不用面面俱到。"
             if "照片" in trigger_content or "图" in trigger_content: task += " 用户要图，请必须输出 [IMG: 画面描述]"
         else:
             task = "看上面的群聊记录，找一个让你有反应的地方给出本能吐槽。"
@@ -1080,13 +1081,13 @@ def trigger_ai_reply(role, trigger_role, trigger_content, user_id, room, is_star
                 socketio.sleep(chunk)
                 elapsed += chunk
             is_last = (i == len(bubbles) - 1)
-            msg_payload = {"role": role, "content": bubble, "mode": "full"}
+            msg_payload = {"role": role, "content": bubble, "mode": "full", "id": uuid.uuid4().hex}
             if is_last and audio_url:
                 msg_payload["audio"] = audio_url
             socketio.emit("ai_message", msg_payload, room=room)
             if not is_last: socketio.sleep(random.uniform(0.4, 1.0))
 
-        if img_url: socketio.emit("ai_message", {"role": role, "content": "", "image": img_url, "mode": "full"}, room=room)
+        if img_url: socketio.emit("ai_message", {"role": role, "content": "", "image": img_url, "mode": "full", "id": uuid.uuid4().hex}, room=room)
 
         # 链式接话
         # is_chain=False（直接回用户）：60% 概率触发链
@@ -1163,7 +1164,7 @@ def trigger_dm_reply(role, user_content, user_id, room):
                 socketio.sleep(chunk)
                 elapsed += chunk
             is_last = (i == len(bubbles) - 1)
-            msg_payload = {"role": role, "content": bubble, "mode": "full"}
+            msg_payload = {"role": role, "content": bubble, "mode": "full", "id": uuid.uuid4().hex}
             if is_last and audio_url:
                 msg_payload["audio"] = audio_url
             socketio.emit("dm_reply", msg_payload, room=room)
@@ -1175,7 +1176,7 @@ def trigger_dm_reply(role, user_content, user_id, room):
             if not is_last: socketio.sleep(random.uniform(0.4, 1.0))
 
         if img_url:
-            socketio.emit("dm_reply", {"role": role, "content": "", "image": img_url, "mode": "full"}, room=room)
+            socketio.emit("dm_reply", {"role": role, "content": "", "image": img_url, "mode": "full", "id": uuid.uuid4().hex}, room=room)
             db["dm_messages"].insert_one({
                 "user_id": user_id, "chat_role": role, "sender": role,
                 "content": "", "image": img_url, "timestamp": datetime.utcnow()

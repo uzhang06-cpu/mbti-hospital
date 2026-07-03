@@ -1889,6 +1889,7 @@ function logout() {
 let socket = null;
 
 function initSocketAndApp() {
+    if (socket) return;   // 防止重复初始化导致监听器重复绑定 → 消息渲染两次
     socket = io({
         reconnection: true,
         reconnectionAttempts: 10,
@@ -2522,6 +2523,17 @@ function updateSelection(items) {
 
 function bindSocketEvents() {
 
+// 消息去重：断线重连窗口内，同一条消息可能被投递给新旧两个 socket 会话，
+// 后端已为每条 emit 附带唯一 id，这里按 id 丢弃重复的那条。
+const _seenMsgIds = new Set();
+function _isDup(id) {
+    if (!id) return false;
+    if (_seenMsgIds.has(id)) return true;
+    _seenMsgIds.add(id);
+    if (_seenMsgIds.size > 500) { _seenMsgIds.clear(); _seenMsgIds.add(id); }
+    return false;
+}
+
 socket.on('connect', () => {
     console.log('[Socket] Connected!', socket.id);
     document.getElementById('save-status') && (document.getElementById('save-status').textContent = '✅ 已连接服务器');
@@ -2531,8 +2543,8 @@ socket.on('disconnect', () => {
 });
 socket.on('connect_error', (err) => { console.log('[Socket] Connect Error:', err); });
 
-socket.on('ai_message', ({ role, content, mode, image, audio }) => {
-    console.log('[Frontend] Received ai_message:', { role, content, mode, image, audio });
+socket.on('ai_message', ({ role, content, mode, image, audio, id }) => {
+    console.log('[Frontend] Received ai_message:', { role, content, mode, image, audio, id });
     const tb = document.getElementById('typing-bar');
     clearTimeout(groupTypingTimer);
     tb.innerHTML = `<span style="color:var(--${role.toLowerCase()})">${role}</span> 正在输入…`;
@@ -2540,14 +2552,15 @@ socket.on('ai_message', ({ role, content, mode, image, audio }) => {
     groupTypingTimer = setTimeout(() => { tb.textContent = ''; tb.classList.remove('visible'); }, 3000);
 
     if ((mode === 'full' || mode === 'append') && (content || image || audio)) {
+        if (_isDup(id)) return;
         appendGroupBubble(role, content, false, image, audio);
         addUnread('group');
         playNotificationSound();
     }
 });
 
-socket.on('dm_reply', ({ role, content, mode, image, audio }) => {
-    console.log('[Frontend] Received dm_reply:', { role, content, mode, image, audio });
+socket.on('dm_reply', ({ role, content, mode, image, audio, id }) => {
+    console.log('[Frontend] Received dm_reply:', { role, content, mode, image, audio, id });
     const bar = document.getElementById('typing-' + role);
     if (bar) {
         clearTimeout(dmTypingTimers[role]);
@@ -2555,6 +2568,7 @@ socket.on('dm_reply', ({ role, content, mode, image, audio }) => {
         dmTypingTimers[role] = setTimeout(() => { bar.textContent = ''; }, 3000);
     }
     if ((mode === 'full' || mode === 'append') && (content || image || audio)) {
+        if (_isDup(id)) return;
         appendDMBubble(role, role, content, false, image, audio);
         addUnread('dm-' + role);
         if (bar) { clearTimeout(dmTypingTimers[role]); bar.textContent = ''; }
