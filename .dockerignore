@@ -1,0 +1,16 @@
+.git
+.gitignore
+*.md
+.env
+.vercel
+.vercelignore
+vercel.json
+__pycache__
+*.pyc
+*.log
+启动精神病院.bat
+访问地址备忘.txt
+static/audio
+static/uploads
+static/temp_audio
+*_test.py
