@@ -387,10 +387,13 @@ body.dark .nav-item.active { background: rgba(10,132,255,0.20); }
     border-radius: 0; overflow: visible;
 }
 .bubble img {
-    max-width: 250px; width: auto; height: auto; min-height: 0;
+    max-width: 260px; width: auto; height: auto; min-height: 0;
     border-radius: 16px; margin: 0; display: block; cursor: zoom-in;
+    border: 1px solid var(--border);
+    box-shadow: 0 1px 4px rgba(0,0,0,0.10);
     background: var(--surface2);
 }
+body.dark .bubble img { box-shadow: 0 1px 6px rgba(0,0,0,0.4); }
 
 /* ── Image loading skeleton ── */
 .img-loading {
@@ -1017,7 +1020,7 @@ input[type=range]::-webkit-slider-thumb:hover { transform: scale(1.1); }
             </div>
             <div class="chat-header-right">
                 <div id="typing-bar"></div>
-                <button class="icon-btn" onclick="openModal()" title="调参设置"><svg class="ic" viewBox="0 0 24 24"><line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/></svg></button>
+                <button class="icon-btn" onclick="openModal()" title="调参设置"><svg class="ic" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></button>
                 <button id="hamburger" onclick="openSidebar()" title="菜单"><svg class="ic" viewBox="0 0 24 24"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg></button>
             </div>
         </div>
@@ -1146,7 +1149,7 @@ input[type=range]::-webkit-slider-thumb:hover { transform: scale(1.1); }
             <div class="chat-header-right">
                 <div id="typing-bar-dm-ENFJ"></div>
                 
-                <button class="icon-btn" onclick="openModal()" title="调参设置"><svg class="ic" viewBox="0 0 24 24"><line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/></svg></button>
+                <button class="icon-btn" onclick="openModal()" title="调参设置"><svg class="ic" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></button>
                 <button id="hamburger" onclick="openSidebar()" title="菜单"><svg class="ic" viewBox="0 0 24 24"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg></button>
             </div>
         </div>
@@ -1167,7 +1170,7 @@ input[type=range]::-webkit-slider-thumb:hover { transform: scale(1.1); }
     <div class="panel" id="panel-moments">
         <div class="moments-header">
             <div class="moments-header-title">朋友圈</div>
-            <button class="icon-btn" onclick="generateMoments()" id="gen-moments-btn" title="强制刷新动态"><svg class="ic" viewBox="0 0 24 24"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg></button>
+            <button class="icon-btn" onclick="generateMoments()" id="gen-moments-btn" title="强制刷新动态"><svg class="ic" viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-2.64-6.36"/><polyline points="21 3 21 9 15 9"/></svg></button>
         </div>
 
         <div class="moments-scroll-area" id="moments-scroll-area">
@@ -1683,14 +1686,17 @@ function appendGroupBubble(role, content, isHistory = false, image = "", audio =
     }
     const bubble = document.createElement('div');
     bubble.className = 'bubble' + (isHistory ? ' no-anim' : '');
+    let imgBubble = null;
 
     if (!audio) {
         if (content) bubble.textContent = content;
     }
 
     if (image) {
+        imgBubble = document.createElement('div');
+        imgBubble.className = 'bubble' + (isHistory ? ' no-anim' : '');
         const loader = document.createElement('div'); loader.className = 'img-loading';
-        bubble.appendChild(loader);
+        imgBubble.appendChild(loader);
 
         const img = document.createElement('img');
         img.src = image;
@@ -1708,7 +1714,7 @@ function appendGroupBubble(role, content, isHistory = false, image = "", audio =
             loader.innerHTML = '<span style="color:#ff5555">❌ 图片加载失败<br>请检查网络/代理</span>';
         };
         img.onclick = () => window.open(image, '_blank');
-        bubble.appendChild(img);
+        imgBubble.appendChild(img);
     }
     if (audio) {
         console.log('[Frontend] Rendering voice bubble for:', audio);
@@ -1824,7 +1830,8 @@ function appendGroupBubble(role, content, isHistory = false, image = "", audio =
              // audioEl.play().catch(e => console.log('Auto-play blocked', e));
         }
     }
-    col.appendChild(bubble);
+    if (content || audio) col.appendChild(bubble);
+    if (imgBubble) col.appendChild(imgBubble);
 
     group.appendChild(av); group.appendChild(col);
     win.appendChild(group);
@@ -1869,14 +1876,17 @@ function appendDMBubble(chatRole, senderRole, content, isHistory = false, image 
     col.className = 'bubble-col';
     const bubble = document.createElement('div');
     bubble.className = 'bubble' + (isHistory ? ' no-anim' : '');
+    let imgBubble = null;
 
     if (!audio) {
         if (content) bubble.textContent = content;
     }
     
     if (image) {
+        imgBubble = document.createElement('div');
+        imgBubble.className = 'bubble' + (isHistory ? ' no-anim' : '');
         const loader = document.createElement('div'); loader.className = 'img-loading';
-        bubble.appendChild(loader);
+        imgBubble.appendChild(loader);
 
         const img = document.createElement('img');
         img.src = image;
@@ -1894,7 +1904,7 @@ function appendDMBubble(chatRole, senderRole, content, isHistory = false, image 
             loader.innerHTML = '<span style="color:#ff5555">❌ 图片加载失败<br>请检查网络/代理</span>';
         };
         img.onclick = () => window.open(image, '_blank');
-        bubble.appendChild(img);
+        imgBubble.appendChild(img);
     }
     if (audio) {
         const voiceBubble = document.createElement('div');
@@ -1985,7 +1995,8 @@ function appendDMBubble(chatRole, senderRole, content, isHistory = false, image 
         bubble.appendChild(voiceBubble);
         bubble.appendChild(audioEl);
     }
-    col.appendChild(bubble);
+    if (content || audio) col.appendChild(bubble);
+    if (imgBubble) col.appendChild(imgBubble);
 
     group.appendChild(av); group.appendChild(col);
     win.appendChild(group);
@@ -2274,7 +2285,7 @@ function generateMoments() {
         .catch(err => console.error('朋友圈生成失败:', err));
 
     setTimeout(() => {
-        btn.innerHTML = '<svg class="ic" viewBox="0 0 24 24"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>'; btn.disabled = false; generatingMoments = false;
+        btn.innerHTML = '<svg class="ic" viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-2.64-6.36"/><polyline points="21 3 21 9 15 9"/></svg>'; btn.disabled = false; generatingMoments = false;
     }, 30000);
 }
 
