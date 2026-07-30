@@ -15,105 +15,86 @@
         <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600&family=Noto+Serif+SC:wght@400;600;700&family=Noto+Sans+SC:wght@300;400;500&display=swap" rel="stylesheet">
 
     <style>
+
 /* ═══════════════════════════════════════════════════════════
-   MBTI 群聊实验室 — Digital Aura v3
-   Design: Luminous dark interface, character-infused typography
-   Font: Outfit (UI numerics) + Noto Sans SC / Noto Serif SC
+   MBTI 群聊实验室 — Signal
+   Design: minimal high-end messaging (iMessage-inspired)
+   Light-first, single blue accent, neutral bubbles, no neon.
    ═══════════════════════════════════════════════════════════ */
 
 :root {
-    /* ── Depth Backgrounds ── */
-    --bg:        #070810;
-    --bg2:       #0b0c18;
-    --surface:   #101221;
-    --surface2:  #171929;
-    --surface3:  #1e2035;
-    --border:    rgba(255,255,255,0.05);
-    --border2:   rgba(255,255,255,0.09);
-    --text:      #e8e9f5;
-    --text-sub:  #8a8aac;
-    --text-muted:#46466a;
+    /* ── Light (default) ── */
+    --bg:        #ffffff;
+    --bg2:       #f2f2f7;
+    --surface:   #ffffff;
+    --surface2:  #e9e9eb;   /* other-party bubble */
+    --surface3:  #f2f2f7;
+    --border:    rgba(0,0,0,0.07);
+    --border2:   rgba(0,0,0,0.12);
+    --text:      #1c1c1e;
+    --text-sub:  #636366;
+    --text-muted:#a1a1a6;
 
-    /* ── Character Colors ── */
-    --enfp:  #ff8c42;
-    --infp:  #5bc8f5;
-    --entp:  #c97ef5;
-    --entj:  #ff4d4d;
-    --estj:  #00b4ad;
-    --enfj:  #ffb020;
-    --infj:  #4fd896;
-    --accent:#6c7fff;
+    /* Single accent */
+    --accent:    #0a84ff;
+    --accent-press:#0060df;
 
-    /* ── Bubble Tints ── */
-    --tint-enfp: rgba(255,140,66,0.08);
-    --tint-infp: rgba(91,200,245,0.08);
-    --tint-entp: rgba(201,126,245,0.08);
-    --tint-entj: rgba(255,77,77,0.08);
-    --tint-estj: rgba(0,180,173,0.08);
-    --tint-enfj: rgba(255,176,32,0.08);
-    --tint-infj: rgba(79,216,150,0.08);
+    /* Character identity (muted — only on avatars, names, typing, strips) */
+    --enfp:  #e08a3c;
+    --infp:  #3a9fd6;
+    --entp:  #9d6fd0;
+    --entj:  #dd5757;
+    --estj:  #17a89f;
+    --enfj:  #d9a11f;
+    --infj:  #22a877;
 
-    /* ── Border Tints ── */
-    --b-enfp: rgba(255,140,66,0.25);
-    --b-infp: rgba(91,200,245,0.25);
-    --b-entp: rgba(201,126,245,0.25);
-    --b-entj: rgba(255,77,77,0.25);
-    --b-estj: rgba(0,180,173,0.25);
-    --b-enfj: rgba(255,176,32,0.25);
-    --b-infj: rgba(79,216,150,0.25);
+    /* Self / other bubbles */
+    --bubble-self-bg:     var(--accent);
+    --bubble-self-text:   #ffffff;
+    --bubble-other-bg:    var(--surface2);
+    --bubble-other-text:  var(--text);
 
-    /* ── Glows ── */
-    --glow-enfp: rgba(255,140,66,0.30);
-    --glow-infp: rgba(91,200,245,0.30);
-    --glow-entp: rgba(201,126,245,0.30);
-    --glow-entj: rgba(255,77,77,0.30);
-    --glow-estj: rgba(0,180,173,0.30);
-    --glow-enfj: rgba(255,176,32,0.30);
-    --glow-infj: rgba(79,216,150,0.30);
-    --glow-accent: rgba(108,127,255,0.25);
+    /* Legacy tokens kept for inline refs (neutralised) */
+    --tint-enfp: transparent; --tint-infp: transparent; --tint-entp: transparent;
+    --tint-entj: transparent; --tint-estj: transparent; --tint-enfj: transparent; --tint-infj: transparent;
+    --b-enfp: var(--border2); --b-infp: var(--border2); --b-entp: var(--border2);
+    --b-entj: var(--border2); --b-estj: var(--border2); --b-enfj: var(--border2); --b-infj: var(--border2);
+    --glow-enfp: transparent; --glow-infp: transparent; --glow-entp: transparent;
+    --glow-entj: transparent; --glow-estj: transparent; --glow-enfj: transparent;
+    --glow-infj: transparent; --glow-accent: transparent;
 
-    /* ── Self Bubble ── */
-    --bubble-self-bg:     rgba(108,127,255,0.13);
-    --bubble-self-border: rgba(108,127,255,0.28);
-
-    /* ── Glass ── */
-    --glass:      rgba(7,8,16,0.88);
-    --glass-blur: blur(28px);
-    --sidebar-w:  276px;
+    --glass:      rgba(255,255,255,0.72);
+    --glass-blur: blur(20px) saturate(180%);
+    --sidebar-w:  288px;
+    --radius-bubble: 19px;
 }
 
-/* ── Light Theme ── */
-body.light {
-    --bg:       #f0f1f9;
-    --bg2:      #e6e8f3;
-    --surface:  #ffffff;
-    --surface2: #eef0fa;
-    --surface3: #e3e6f5;
-    --border:   rgba(0,0,0,0.06);
-    --border2:  rgba(0,0,0,0.11);
-    --text:     #14152e;
-    --text-sub: #555577;
-    --text-muted: #9898b8;
+/* ── Dark ── */
+body.dark {
+    --bg:        #000000;
+    --bg2:       #1c1c1e;
+    --surface:   #1c1c1e;
+    --surface2:  #262629;   /* other-party bubble */
+    --surface3:  #2c2c2e;
+    --border:    rgba(255,255,255,0.10);
+    --border2:   rgba(255,255,255,0.16);
+    --text:      #f5f5f7;
+    --text-sub:  #aeaeb2;
+    --text-muted:#8e8e93;
 
-    --tint-enfp: rgba(255,140,66,0.07);
-    --tint-infp: rgba(91,200,245,0.07);
-    --tint-entp: rgba(201,126,245,0.07);
-    --tint-entj: rgba(255,77,77,0.07);
-    --tint-estj: rgba(0,180,173,0.07);
-    --tint-enfj: rgba(255,176,32,0.07);
-    --tint-infj: rgba(79,216,150,0.07);
+    --accent:    #0a84ff;
+    --accent-press:#409cff;
 
-    --b-enfp: rgba(255,140,66,0.3);
-    --b-infp: rgba(91,200,245,0.3);
-    --b-entp: rgba(201,126,245,0.3);
-    --b-entj: rgba(255,77,77,0.3);
-    --b-estj: rgba(0,180,173,0.3);
-    --b-enfj: rgba(255,176,32,0.3);
-    --b-infj: rgba(79,216,150,0.3);
+    --enfp:  #ff9f45;
+    --infp:  #58bdf0;
+    --entp:  #bb86e8;
+    --entj:  #ff6b6b;
+    --estj:  #2ec8bd;
+    --enfj:  #ffc24d;
+    --infj:  #40d99a;
 
-    --bubble-self-bg:     rgba(108,127,255,0.09);
-    --bubble-self-border: rgba(108,127,255,0.25);
-    --glass:      rgba(255,255,255,0.92);
+    --bubble-other-bg:  var(--surface2);
+    --glass:      rgba(20,20,22,0.72);
 }
 
 /* ═══════════════════════════
@@ -125,258 +106,160 @@ html, body { height: 100%; overflow: hidden; }
 body {
     background: var(--bg);
     color: var(--text);
-    font-family: 'Outfit', 'Noto Sans SC', -apple-system, sans-serif;
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI",
+                 "Noto Sans SC", "PingFang SC", "Microsoft YaHei", Roboto, sans-serif;
     font-weight: 400;
     display: flex;
     height: 100dvh;
     -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
     position: relative;
 }
 
-/* ── Atmospheric Background ── */
-body::before {
-    content: '';
-    position: fixed;
-    top: -40%; right: -20%;
-    width: 70vw; height: 70vw;
-    background: radial-gradient(ellipse, rgba(108,127,255,0.055) 0%, transparent 65%);
-    pointer-events: none; z-index: 0;
-    animation: auraFloat 28s ease-in-out infinite alternate;
-}
-body::after {
-    content: '';
-    position: fixed;
-    bottom: -30%; left: -15%;
-    width: 55vw; height: 55vw;
-    background: radial-gradient(ellipse, rgba(79,216,150,0.04) 0%, transparent 65%);
-    pointer-events: none; z-index: 0;
-    animation: auraFloat 34s ease-in-out infinite alternate-reverse;
-}
-body.light::before, body.light::after { opacity: 0.35; }
-
-@keyframes auraFloat {
-    0%   { transform: translate(0, 0) scale(1); }
-    100% { transform: translate(-4%, 6%) scale(1.06); }
-}
-
-/* ── Noise Texture Overlay ── */
-#noise-overlay {
-    position: fixed; inset: 0; z-index: 0;
-    pointer-events: none;
-    opacity: 0.022;
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23n)'/%3E%3C/svg%3E");
-    background-size: 200px 200px;
-}
-body.light #noise-overlay { opacity: 0.015; }
+/* legacy atmosphere layers — disabled */
+body::before, body::after { display: none; }
+#noise-overlay { display: none; }
 
 /* ══════════════════════════
    SCROLLBAR
 ══════════════════════════ */
-::-webkit-scrollbar { width: 3px; }
+::-webkit-scrollbar { width: 7px; height: 7px; }
 ::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.07); border-radius: 10px; }
-::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.14); }
-body.light ::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.09); }
+::-webkit-scrollbar-thumb { background: rgba(120,120,130,0.28); border-radius: 10px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(120,120,130,0.5); }
+
+/* ══════════════════════════
+   ICONS (line-svg)
+══════════════════════════ */
+svg.ic {
+    width: 20px; height: 20px;
+    fill: none; stroke: currentColor;
+    stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round;
+    display: block; flex-shrink: 0;
+}
 
 /* ══════════════════════════
    SIDEBAR
 ══════════════════════════ */
 #sidebar {
     width: var(--sidebar-w);
-    background: var(--glass);
-    backdrop-filter: var(--glass-blur);
-    -webkit-backdrop-filter: var(--glass-blur);
-    border-right: 1px solid var(--border2);
-    display: flex;
-    flex-direction: column;
-    flex-shrink: 0;
-    height: 100%;
-    position: relative;
-    z-index: 10;
+    background: var(--bg2);
+    border-right: 1px solid var(--border);
+    display: flex; flex-direction: column;
+    flex-shrink: 0; height: 100%;
+    position: relative; z-index: 10;
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
 }
-
-/* Top shimmer */
-#sidebar::before {
-    content: '';
-    position: absolute;
-    top: 0; left: 0; right: 0; height: 220px;
-    background: linear-gradient(180deg, rgba(108,127,255,0.06) 0%, transparent 100%);
-    pointer-events: none; z-index: 0;
-}
-
-/* Bottom fade */
-#sidebar::after {
-    content: '';
-    position: absolute;
-    bottom: 0; left: 0; right: 0; height: 60px;
-    background: linear-gradient(0deg, var(--glass) 0%, transparent 100%);
-    pointer-events: none; z-index: 2;
-}
+body.dark #sidebar { background: #0a0a0b; }
 
 #sidebar-header {
-    padding: 22px 18px 14px;
+    padding: 20px 18px 12px;
     border-bottom: 1px solid var(--border);
-    position: relative; z-index: 1;
+    position: sticky; top: 0; z-index: 3;
+    background: var(--bg2);
     flex-shrink: 0;
 }
+body.dark #sidebar-header { background: #0a0a0b; }
 
-#app-title-wrap {
-    display: flex; align-items: center; justify-content: space-between;
-}
+#app-title-wrap { display: flex; align-items: center; justify-content: space-between; }
 
 #app-title {
-    font-family: 'Noto Serif SC', serif;
-    font-size: 18px; font-weight: 700;
-    background: linear-gradient(130deg, #a0aaff 0%, #d0a0ff 55%, #a0aaff 100%);
-    background-size: 200% 100%;
-    -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
-    letter-spacing: 0.01em;
-    animation: titleShimmer 6s ease-in-out infinite;
-}
-@keyframes titleShimmer {
-    0%, 100% { background-position: 0% 50%; }
-    50%       { background-position: 100% 50%; }
+    font-size: 17px; font-weight: 650; letter-spacing: -0.01em;
+    color: var(--text);
 }
 
 #app-sub {
-    font-size: 10px; color: var(--text-muted);
-    margin-top: 5px; letter-spacing: 0.1em;
-    display: flex; align-items: center; gap: 7px;
-    text-transform: uppercase;
+    font-size: 11px; color: var(--text-muted);
+    margin-top: 3px; letter-spacing: 0.01em;
+    display: flex; align-items: center; gap: 6px;
 }
 
 .status-dot {
-    width: 5px; height: 5px;
-    background: var(--infj);
-    border-radius: 50%;
-    box-shadow: 0 0 7px var(--glow-infj);
-    animation: pulseDot 2.8s ease-in-out infinite;
+    width: 6px; height: 6px;
+    background: #34c759; border-radius: 50%;
     flex-shrink: 0;
-}
-@keyframes pulseDot {
-    0%, 100% { opacity: 1; transform: scale(1); box-shadow: 0 0 7px var(--glow-infj); }
-    50%       { opacity: 0.35; transform: scale(0.65); box-shadow: 0 0 3px var(--glow-infj); }
 }
 
 /* ── Theme Toggle ── */
 #theme-toggle {
-    width: 30px; height: 30px;
-    border-radius: 10px;
-    border: 1px solid var(--border2);
-    background: rgba(255,255,255,0.04);
-    cursor: pointer;
+    width: 32px; height: 32px; border-radius: 9px;
+    border: none; background: transparent;
+    cursor: pointer; color: var(--text-sub);
     display: flex; align-items: center; justify-content: center;
-    font-size: 14px; line-height: 1; flex-shrink: 0;
-    transition: background 0.2s, transform 0.3s cubic-bezier(0.34,1.56,0.64,1), border-color 0.2s;
+    transition: background 0.16s, color 0.16s;
 }
-#theme-toggle:hover {
-    background: rgba(255,255,255,0.1);
-    border-color: rgba(255,255,255,0.2);
-    transform: rotate(20deg) scale(1.1);
-}
-body.light #theme-toggle { background: rgba(0,0,0,0.04); }
-body.light #theme-toggle:hover { background: rgba(0,0,0,0.09); }
+#theme-toggle:hover { background: rgba(120,120,130,0.14); color: var(--text); }
+#theme-toggle .ic { width: 18px; height: 18px; }
+#theme-toggle .ic-sun { display: none; }
+body.dark #theme-toggle .ic-sun { display: block; }
+body.dark #theme-toggle .ic-moon { display: none; }
+
+/* ── User bar ── */
+#user-bar { font-size: 12px; }
 
 /* ── Nav List ── */
 #nav-list {
     flex: 1; overflow-y: auto;
-    padding: 10px 0 70px;
+    padding: 8px 8px 40px;
     scrollbar-width: none; position: relative; z-index: 1;
 }
 #nav-list::-webkit-scrollbar { display: none; }
 
-/* Section labels */
 .nav-section-label {
-    font-size: 9px; letter-spacing: 0.14em; color: var(--text-muted);
-    text-transform: uppercase; padding: 8px 18px 4px;
-    font-weight: 500;
+    font-size: 11px; letter-spacing: 0.02em; color: var(--text-muted);
+    padding: 12px 12px 4px; font-weight: 600;
 }
 
 .nav-item {
-    display: flex; align-items: center; gap: 11px;
-    padding: 9px 12px; margin: 2px 10px;
-    cursor: pointer; border-radius: 14px;
-    transition: background 0.18s, transform 0.12s;
+    display: flex; align-items: center; gap: 12px;
+    padding: 9px 10px; margin: 1px 4px;
+    cursor: pointer; border-radius: 12px;
+    transition: background 0.14s;
     position: relative;
 }
-.nav-item:hover { background: rgba(255,255,255,0.05); }
-.nav-item:active { transform: scale(0.97); }
+.nav-item:hover { background: rgba(120,120,130,0.10); }
+.nav-item.active { background: rgba(10,132,255,0.12); }
+body.dark .nav-item.active { background: rgba(10,132,255,0.20); }
+.nav-item.active .nav-name { color: var(--text); font-weight: 600; }
 
-/* Active state */
-.nav-item.active { background: rgba(108,127,255,0.09); }
-.nav-item.active::before {
-    content: '';
-    position: absolute; left: 0; top: 50%;
-    transform: translateY(-50%);
-    width: 3px; height: 52%; min-height: 16px;
-    border-radius: 0 4px 4px 0;
-    background: linear-gradient(180deg, #8899ff, #b080ff);
-    box-shadow: 0 0 12px rgba(136,153,255,0.55);
-}
-
-/* Per-character active accents */
-.nav-item#nav-group.active::before { background: linear-gradient(180deg, #8899ff, #6644bb); box-shadow: 0 0 12px rgba(108,127,255,0.55); }
-.nav-item#nav-dm-ENFP.active::before { background: linear-gradient(180deg, #ffb060, #ff7020); box-shadow: 0 0 12px var(--glow-enfp); }
-.nav-item#nav-dm-INFP.active::before { background: linear-gradient(180deg, #80d8ff, #3090d8); box-shadow: 0 0 12px var(--glow-infp); }
-.nav-item#nav-dm-ENTP.active::before { background: linear-gradient(180deg, #d8a0ff, #a040e0); box-shadow: 0 0 12px var(--glow-entp); }
-.nav-item#nav-dm-ENTJ.active::before { background: linear-gradient(180deg, #ff7070, #d03030); box-shadow: 0 0 12px var(--glow-entj); }
-.nav-item#nav-dm-ESTJ.active::before { background: linear-gradient(180deg, #40c8c0, #008880); box-shadow: 0 0 12px var(--glow-estj); }
-.nav-item#nav-dm-ENFJ.active::before { background: linear-gradient(180deg, #ffd050, #e09000); box-shadow: 0 0 12px var(--glow-enfj); }
-.nav-item#nav-moments.active::before { background: linear-gradient(180deg, #f8a0fb, #e84070); box-shadow: 0 0 12px rgba(248,80,160,0.55); }
-
-/* Active nav name */
-.nav-item.active .nav-name { color: #c8ceff; }
-body.light .nav-item.active .nav-name { color: #4060d8; }
-
-/* ── Nav Avatar ── */
+/* ── Nav Avatar (circle) ── */
 .nav-avatar {
-    width: 42px; height: 42px;
-    border-radius: 14px;
+    width: 44px; height: 44px; border-radius: 50%;
     display: flex; align-items: center; justify-content: center;
-    flex-shrink: 0; color: white; overflow: hidden;
-    position: relative;
-    transition: transform 0.2s cubic-bezier(0.34,1.56,0.64,1), box-shadow 0.2s;
+    flex-shrink: 0; color: white; overflow: hidden; position: relative;
 }
 .nav-avatar svg { width: 100%; height: 100%; display: block; }
 .nav-avatar img { width: 100%; height: 100%; object-fit: cover; }
-.nav-item:hover .nav-avatar { transform: scale(1.06); }
-.nav-item.active .nav-avatar { box-shadow: 0 4px 18px rgba(0,0,0,0.35); }
 
 .nav-info { flex: 1; min-width: 0; }
 .nav-name {
-    font-size: 13px; font-weight: 500; color: var(--text);
+    font-size: 14.5px; font-weight: 500; color: var(--text);
     white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-    transition: color 0.2s;
+    letter-spacing: -0.01em;
 }
 .nav-preview {
-    font-size: 10.5px; color: var(--text-muted);
+    font-size: 12.5px; color: var(--text-muted);
     white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
     margin-top: 2px;
 }
 
-.nav-divider {
-    height: 1px;
-    background: linear-gradient(90deg, transparent, var(--border2), transparent);
-    margin: 5px 16px;
-}
+.nav-divider { height: 1px; background: var(--border); margin: 7px 14px; }
 
 /* ── Unread Badge ── */
-.unread-badge {
-    min-width: 18px; height: 18px;
-    background: linear-gradient(135deg, #ff5a78, #ff2050);
-    color: white; border-radius: 9px;
-    font-size: 10px; font-weight: 700;
+.nav-badge:empty { display: none; }
+.unread-badge, .nav-badge {
+    min-width: 19px; height: 19px;
+    background: #ff3b30; color: white; border-radius: 10px;
+    font-size: 11px; font-weight: 600;
     display: flex; align-items: center; justify-content: center;
-    padding: 0 5px; flex-shrink: 0;
-    box-shadow: 0 2px 10px rgba(255,32,80,0.5);
-    animation: badgePop 0.3s cubic-bezier(0.34,1.56,0.64,1);
+    padding: 0 6px; flex-shrink: 0;
+    animation: badgePop 0.24s cubic-bezier(0.34,1.4,0.64,1);
 }
-@keyframes badgePop { from { transform: scale(0); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+@keyframes badgePop { from { transform: scale(0); } to { transform: scale(1); } }
 
 /* ══════════════════════════
-   MAIN CONTENT
+   MAIN
 ══════════════════════════ */
 #main {
     flex: 1; display: flex; flex-direction: column;
@@ -384,17 +267,9 @@ body.light .nav-item.active .nav-name { color: #4060d8; }
     position: relative; z-index: 1;
     background: var(--bg);
 }
-
 .panel { display: none; flex-direction: column; height: 100%; }
 .panel.active { display: flex; }
-
-/* ── Panel-level ambient tinting ── */
-#panel-dm-ENFP { background: radial-gradient(ellipse 60% 40% at 80% 10%, rgba(255,140,66,0.03) 0%, transparent 100%); }
-#panel-dm-INFP { background: radial-gradient(ellipse 60% 40% at 80% 10%, rgba(91,200,245,0.03) 0%, transparent 100%); }
-#panel-dm-ENTP { background: radial-gradient(ellipse 60% 40% at 80% 10%, rgba(201,126,245,0.03) 0%, transparent 100%); }
-#panel-dm-ENTJ { background: radial-gradient(ellipse 60% 40% at 80% 10%, rgba(255,77,77,0.03) 0%, transparent 100%); }
-#panel-dm-ESTJ { background: radial-gradient(ellipse 60% 40% at 80% 10%, rgba(0,180,173,0.03) 0%, transparent 100%); }
-#panel-dm-ENFJ { background: radial-gradient(ellipse 60% 40% at 80% 10%, rgba(255,176,32,0.03) 0%, transparent 100%); }
+/* legacy per-panel tints removed */
 
 /* ══════════════════════════
    CHAT HEADER
@@ -404,175 +279,205 @@ body.light .nav-item.active .nav-name { color: #4060d8; }
     backdrop-filter: var(--glass-blur);
     -webkit-backdrop-filter: var(--glass-blur);
     border-bottom: 1px solid var(--border);
-    padding: 0 22px; height: 64px;
+    padding: 0 16px; height: 56px;
     display: flex; align-items: center; justify-content: space-between;
-    flex-shrink: 0; position: relative;
-    z-index: 5;
+    flex-shrink: 0; position: relative; z-index: 5;
 }
+.chat-header::after { display: none; }
 
-/* Character accent line */
-#panel-group   .chat-header::after { content:''; position:absolute; bottom:0; left:0; right:0; height:1px; background: linear-gradient(90deg, transparent 0%, rgba(108,127,255,0.45) 50%, transparent 100%); }
-#panel-dm-ENFP .chat-header::after { content:''; position:absolute; bottom:0; left:0; right:0; height:1px; background: linear-gradient(90deg, transparent 0%, var(--b-enfp) 50%, transparent 100%); }
-#panel-dm-INFP .chat-header::after { content:''; position:absolute; bottom:0; left:0; right:0; height:1px; background: linear-gradient(90deg, transparent 0%, var(--b-infp) 50%, transparent 100%); }
-#panel-dm-ENTP .chat-header::after { content:''; position:absolute; bottom:0; left:0; right:0; height:1px; background: linear-gradient(90deg, transparent 0%, var(--b-entp) 50%, transparent 100%); }
-#panel-dm-ENTJ .chat-header::after { content:''; position:absolute; bottom:0; left:0; right:0; height:1px; background: linear-gradient(90deg, transparent 0%, var(--b-entj) 50%, transparent 100%); }
-#panel-dm-ESTJ .chat-header::after { content:''; position:absolute; bottom:0; left:0; right:0; height:1px; background: linear-gradient(90deg, transparent 0%, var(--b-estj) 50%, transparent 100%); }
-#panel-dm-ENFJ .chat-header::after { content:''; position:absolute; bottom:0; left:0; right:0; height:1px; background: linear-gradient(90deg, transparent 0%, var(--b-enfj) 50%, transparent 100%); }
-
-.chat-header-left  { display: flex; align-items: center; gap: 13px; }
-.chat-header-right { display: flex; align-items: center; gap: 8px; }
+.chat-header-left  { display: flex; align-items: center; gap: 11px; }
+.chat-header-right { display: flex; align-items: center; gap: 4px; }
 
 .chat-header-avatar {
-    width: 38px; height: 38px;
-    border-radius: 13px;
+    width: 36px; height: 36px; border-radius: 50%;
     display: flex; align-items: center; justify-content: center;
-    flex-shrink: 0; overflow: hidden;
-    position: relative;
+    flex-shrink: 0; overflow: hidden; position: relative;
 }
 .chat-header-avatar svg { width: 100%; height: 100%; display: block; }
 .chat-header-avatar img { width: 100%; height: 100%; object-fit: cover; }
-.chat-header-avatar.group { box-shadow: 0 3px 14px rgba(108,127,255,0.38); }
-.chat-header-avatar.ENFP  { box-shadow: 0 3px 14px var(--glow-enfp); }
-.chat-header-avatar.INFP  { box-shadow: 0 3px 14px var(--glow-infp); }
-.chat-header-avatar.ENTP  { box-shadow: 0 3px 14px var(--glow-entp); }
-.chat-header-avatar.ENTJ  { box-shadow: 0 3px 14px var(--glow-entj); }
-.chat-header-avatar.ESTJ  { box-shadow: 0 3px 14px var(--glow-estj); }
-.chat-header-avatar.ENFJ  { box-shadow: 0 3px 14px var(--glow-enfj); }
 
-.chat-header-name {
-    font-size: 14px; font-weight: 600;
-    color: var(--text); letter-spacing: 0.01em;
-}
-.chat-header-sub {
-    font-size: 10px; color: var(--text-muted);
-    margin-top: 2px; letter-spacing: 0.05em;
-}
+.chat-header-name { font-size: 15.5px; font-weight: 600; color: var(--text); letter-spacing: -0.01em; }
+.chat-header-sub  { font-size: 11.5px; color: var(--text-muted); margin-top: 1px; }
 
-#typing-bar, [id^="typing-bar-"] {
-    font-size: 10px; color: var(--text-muted);
-    min-width: 80px; text-align: right; letter-spacing: 0.02em;
+#typing-bar, [id^="typing-bar-"], [id^="typing-"] {
+    font-size: 12px; color: var(--accent);
+    min-width: 60px; text-align: right;
 }
-[class="visible"], #typing-bar.visible, [id^="typing-bar-"].visible {
-    animation: pulseText 1.6s ease-in-out infinite;
-    color: var(--infj);
+#typing-bar.visible, [id^="typing-bar-"].visible {
+    animation: pulseText 1.5s ease-in-out infinite;
 }
-@keyframes pulseText { 0%,100%{opacity:1} 50%{opacity:0.25} }
+@keyframes pulseText { 0%,100%{opacity:1} 50%{opacity:0.4} }
 
-/* ── Icon Button ── */
+/* ── Icon Button (header) ── */
 .icon-btn {
-    width: 33px; height: 33px; border-radius: 10px;
-    border: 1px solid var(--border2);
-    background: rgba(255,255,255,0.04);
+    width: 34px; height: 34px; border-radius: 9px;
+    border: none; background: transparent;
     cursor: pointer; display: flex; align-items: center; justify-content: center;
-    color: var(--text-sub); font-size: 15px;
-    transition: background 0.16s, border-color 0.16s, transform 0.16s, color 0.16s;
+    color: var(--accent);
+    transition: background 0.14s, color 0.14s;
 }
-.icon-btn:hover {
-    background: rgba(255,255,255,0.09);
-    border-color: rgba(255,255,255,0.2);
-    color: var(--text); transform: scale(1.06);
-}
-body.light .icon-btn { background: rgba(0,0,0,0.04); }
-body.light .icon-btn:hover { background: rgba(0,0,0,0.08); }
+.icon-btn:hover { background: rgba(10,132,255,0.12); }
+.icon-btn .ic { width: 21px; height: 21px; }
 
 /* ══════════════════════════
    CHAT WINDOW
 ══════════════════════════ */
 .chat-window {
     flex: 1; overflow-y: auto;
-    padding: 32px 32px 18px;
+    padding: 22px 20px 14px;
     display: flex; flex-direction: column;
-    scroll-behavior: smooth;
-    background: transparent;
-    -webkit-overflow-scrolling: touch;
-    min-height: 0;
+    scroll-behavior: smooth; background: transparent;
+    -webkit-overflow-scrolling: touch; min-height: 0;
 }
 
 .date-divider {
-    text-align: center; font-size: 9.5px; color: var(--text-muted);
-    margin: 0 0 28px; position: relative;
-    letter-spacing: 0.14em; text-transform: uppercase;
+    text-align: center; font-size: 11px; color: var(--text-muted);
+    margin: 4px 0 20px; font-weight: 500; letter-spacing: 0.01em;
 }
-.date-divider::before, .date-divider::after {
-    content: ''; position: absolute; top: 50%;
-    height: 1px; width: 40%;
-}
-.date-divider::before { left: 0;  background: linear-gradient(90deg, transparent, var(--border2)); }
-.date-divider::after  { right: 0; background: linear-gradient(270deg, transparent, var(--border2)); }
+.date-divider::before, .date-divider::after { display: none; }
 
 /* ── Message Groups ── */
-.msg-group { display: flex; gap: 10px; align-items: flex-start; margin-bottom: 20px; }
+.msg-group { display: flex; gap: 9px; align-items: flex-end; margin-bottom: 12px; }
 .msg-group.self { flex-direction: row-reverse; }
-.msg-group.same-sender { margin-top: -12px; }
+.msg-group.same-sender { margin-top: -7px; }
 
 .msg-avatar {
-    width: 36px; height: 36px; border-radius: 12px;
+    width: 32px; height: 32px; border-radius: 50%;
     flex-shrink: 0; display: flex; align-items: center; justify-content: center;
-    overflow: hidden; position: relative; top: 2px;
-    transition: box-shadow 0.2s;
+    overflow: hidden; position: relative;
 }
 .msg-avatar img { width: 100%; height: 100%; object-fit: cover; }
 .msg-avatar svg { width: 100%; height: 100%; display: block; }
+.msg-avatar.phantom { visibility: hidden; }
 
-.msg-avatar.ENFP { box-shadow: 0 2px 12px var(--glow-enfp); }
-.msg-avatar.INFP { box-shadow: 0 2px 12px var(--glow-infp); }
-.msg-avatar.ENTP { box-shadow: 0 2px 12px var(--glow-entp); }
-.msg-avatar.ENTJ { box-shadow: 0 2px 12px var(--glow-entj); }
-.msg-avatar.ESTJ { box-shadow: 0 2px 12px var(--glow-estj); }
-.msg-avatar.ENFJ { box-shadow: 0 2px 12px var(--glow-enfj); }
-.msg-avatar.INFJ { box-shadow: 0 2px 12px var(--glow-infj); }
-.msg-avatar.phantom { visibility: hidden; box-shadow: none; }
-
-.bubble-col {
-    display: flex; flex-direction: column; gap: 3px;
-    max-width: 62%;
-}
+.bubble-col { display: flex; flex-direction: column; gap: 3px; max-width: 68%; }
 .self .bubble-col { align-items: flex-end; }
 
 .msg-sender {
-    font-size: 10px; color: var(--text-muted);
-    margin-bottom: 4px; padding-left: 4px;
-    letter-spacing: 0.05em;
+    font-size: 11.5px; color: var(--text-muted);
+    margin: 0 0 3px 12px;
 }
 .self .msg-sender { display: none; }
 
 /* ── Bubbles ── */
 .bubble {
-    padding: 11px 16px;
-    border-radius: 20px; border-top-left-radius: 5px;
-    font-size: 13.5px; line-height: 1.78; word-break: break-word;
-    background: var(--surface2); color: var(--text);
-    border: 1px solid var(--border);
-    box-shadow: 0 2px 12px rgba(0,0,0,0.2);
-    opacity: 0; transform: translateY(8px) scale(0.99);
-    animation: bubbleIn 0.24s cubic-bezier(0.22,0.61,0.36,1) forwards;
-    position: relative;
+    padding: 8px 14px;
+    border-radius: var(--radius-bubble);
+    font-size: 15px; line-height: 1.4; word-break: break-word;
+    background: var(--bubble-other-bg); color: var(--bubble-other-text);
+    border: none; box-shadow: none;
+    opacity: 0; transform: translateY(6px);
+    animation: bubbleIn 0.2s ease-out forwards;
+    position: relative; max-width: 100%;
 }
 .bubble.no-anim { animation: none; opacity: 1; transform: none; }
-@keyframes bubbleIn { to { opacity: 1; transform: translateY(0) scale(1); } }
+@keyframes bubbleIn { to { opacity: 1; transform: translateY(0); } }
 
-.bubble img {
-    max-width: 200px; min-height: 100px;
-    border-radius: 12px; margin-top: 6px;
-    display: block; cursor: zoom-in;
-    background: rgba(255,255,255,0.04);
-}
-
-/* Self bubble */
+/* iMessage-style tail corners */
+.msg-group:not(.self) .bubble { border-bottom-left-radius: 6px; }
 .self .bubble {
-    background: var(--bubble-self-bg);
-    border-color: var(--bubble-self-border);
-    border-radius: 20px; border-top-right-radius: 5px;
-    box-shadow: 0 2px 16px rgba(108,127,255,0.18);
+    background: var(--bubble-self-bg); color: var(--bubble-self-text);
+    border-bottom-right-radius: 6px;
+}
+/* legacy per-character tints removed — bubbles are uniform */
+
+/* ── Image in bubble: borderless card ── */
+.bubble:has(img), .bubble:has(.img-loading) {
+    padding: 0; background: transparent !important; box-shadow: none;
+    border-radius: 0; overflow: visible;
+}
+.bubble img {
+    max-width: 250px; width: auto; height: auto; min-height: 0;
+    border-radius: 16px; margin: 0; display: block; cursor: zoom-in;
+    background: var(--surface2);
 }
 
-/* Per-character tints */
-.msg-group:has(.msg-avatar.ENFP):not(.self) .bubble { background: var(--tint-enfp); border-color: var(--b-enfp); }
-.msg-group:has(.msg-avatar.INFP):not(.self) .bubble { background: var(--tint-infp); border-color: var(--b-infp); }
-.msg-group:has(.msg-avatar.ENTP):not(.self) .bubble { background: var(--tint-entp); border-color: var(--b-entp); }
-.msg-group:has(.msg-avatar.ENTJ):not(.self) .bubble { background: var(--tint-entj); border-color: var(--b-entj); }
-.msg-group:has(.msg-avatar.ESTJ):not(.self) .bubble { background: var(--tint-estj); border-color: var(--b-estj); }
-.msg-group:has(.msg-avatar.ENFJ):not(.self) .bubble { background: var(--tint-enfj); border-color: var(--b-enfj); }
+/* ── Image loading skeleton ── */
+.img-loading {
+    display: flex; align-items: center; justify-content: center;
+    width: 220px; height: 160px;
+    background: var(--surface2);
+    border-radius: 16px;
+    color: var(--text-muted); font-size: 12.5px; gap: 8px;
+    position: relative; overflow: hidden;
+}
+.img-loading::before {
+    content: ''; width: 16px; height: 16px;
+    border: 2px solid rgba(120,120,130,0.3);
+    border-top-color: var(--accent); border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+}
+.img-loading::after { content: '生成中'; }
+
+/* ══════════════════════════
+   VOICE MESSAGE
+══════════════════════════ */
+.bubble:has(.voice-bubble) {
+    padding: 0; background: transparent !important; box-shadow: none;
+}
+.voice-bubble {
+    display: flex; align-items: center; gap: 10px;
+    min-width: 96px; max-width: 240px;
+    cursor: pointer; user-select: none;
+    padding: 10px 14px;
+    background: var(--bubble-other-bg);
+    border: none; border-radius: var(--radius-bubble);
+    border-bottom-left-radius: 6px;
+    transition: filter 0.14s;
+}
+.voice-bubble:hover { filter: brightness(0.97); }
+.self .voice-bubble {
+    background: var(--bubble-self-bg);
+    border-bottom-left-radius: var(--radius-bubble);
+    border-bottom-right-radius: 6px;
+    flex-direction: row-reverse;
+}
+
+/* play / pause triangle */
+.voice-icon {
+    width: 15px; height: 15px; flex-shrink: 0;
+    background-repeat: no-repeat; background-position: center; background-size: contain;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%230a84ff'%3E%3Cpath d='M8 5v14l11-7z'/%3E%3C/svg%3E");
+}
+.self .voice-icon {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23ffffff'%3E%3Cpath d='M8 5v14l11-7z'/%3E%3C/svg%3E");
+}
+.voice-bubble.playing .voice-icon {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%230a84ff'%3E%3Crect x='6' y='5' width='4' height='14' rx='1'/%3E%3Crect x='14' y='5' width='4' height='14' rx='1'/%3E%3C/svg%3E");
+}
+.self .voice-bubble.playing .voice-icon {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23ffffff'%3E%3Crect x='6' y='5' width='4' height='14' rx='1'/%3E%3Crect x='14' y='5' width='4' height='14' rx='1'/%3E%3C/svg%3E");
+}
+
+/* waveform strip */
+.voice-wave {
+    flex: 1; height: 22px; min-width: 30px;
+    background-repeat: repeat-x; background-position: left center; background-size: auto 100%;
+    opacity: 0.9;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='44' height='22' viewBox='0 0 44 22'%3E%3Cg fill='%230a84ff'%3E%3Crect x='0' y='8' width='2.4' height='6' rx='1.2'/%3E%3Crect x='5' y='4' width='2.4' height='14' rx='1.2'/%3E%3Crect x='10' y='6' width='2.4' height='10' rx='1.2'/%3E%3Crect x='15' y='1' width='2.4' height='20' rx='1.2'/%3E%3Crect x='20' y='7' width='2.4' height='8' rx='1.2'/%3E%3Crect x='25' y='3' width='2.4' height='16' rx='1.2'/%3E%3Crect x='30' y='6' width='2.4' height='10' rx='1.2'/%3E%3Crect x='35' y='9' width='2.4' height='4' rx='1.2'/%3E%3Crect x='40' y='5' width='2.4' height='12' rx='1.2'/%3E%3C/g%3E%3C/svg%3E");
+}
+.self .voice-wave {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='44' height='22' viewBox='0 0 44 22'%3E%3Cg fill='%23ffffff'%3E%3Crect x='0' y='8' width='2.4' height='6' rx='1.2'/%3E%3Crect x='5' y='4' width='2.4' height='14' rx='1.2'/%3E%3Crect x='10' y='6' width='2.4' height='10' rx='1.2'/%3E%3Crect x='15' y='1' width='2.4' height='20' rx='1.2'/%3E%3Crect x='20' y='7' width='2.4' height='8' rx='1.2'/%3E%3Crect x='25' y='3' width='2.4' height='16' rx='1.2'/%3E%3Crect x='30' y='6' width='2.4' height='10' rx='1.2'/%3E%3Crect x='35' y='9' width='2.4' height='4' rx='1.2'/%3E%3Crect x='40' y='5' width='2.4' height='12' rx='1.2'/%3E%3C/g%3E%3C/svg%3E");
+}
+.voice-bubble.playing .voice-wave { animation: wavePulse 1s ease-in-out infinite; }
+@keyframes wavePulse { 0%,100%{opacity:0.6} 50%{opacity:1} }
+
+.voice-duration {
+    font-size: 13px; color: var(--text-sub); font-weight: 500;
+    min-width: 22px; font-variant-numeric: tabular-nums; flex-shrink: 0;
+}
+.self .voice-duration { color: rgba(255,255,255,0.92); }
+
+.voice-convert-btn {
+    font-size: 11px; color: var(--text-sub);
+    border: 1px solid var(--border2); border-radius: 20px;
+    padding: 2px 8px; cursor: pointer; flex-shrink: 0;
+    transition: background 0.14s;
+    white-space: nowrap; background: transparent;
+}
+.voice-convert-btn:hover { background: rgba(120,120,130,0.14); }
+.self .voice-convert-btn { color: rgba(255,255,255,0.85); border-color: rgba(255,255,255,0.4); }
+.voice-dot { display: none; }
 
 /* ══════════════════════════
    INPUT AREA
@@ -582,155 +487,56 @@ body.light .icon-btn:hover { background: rgba(0,0,0,0.08); }
     backdrop-filter: var(--glass-blur);
     -webkit-backdrop-filter: var(--glass-blur);
     border-top: 1px solid var(--border);
-    padding: 13px 16px;
-    display: flex; align-items: center; gap: 9px;
-    flex-shrink: 0;
-    position: relative;
-    z-index: 5;
+    padding: 10px 14px; display: flex; align-items: center; gap: 6px;
+    flex-shrink: 0; position: relative; z-index: 5;
 }
-body.light .input-area { background: rgba(255,255,255,0.94); }
 
-.upload-btn, .dm-upload-btn {
-    width: 35px; height: 35px;
+.upload-btn, .dm-upload-btn, #voice-btn-group, .dm-voice-btn {
+    width: 36px; height: 36px; flex-shrink: 0;
     display: flex; align-items: center; justify-content: center;
-    background: var(--surface3); border: 1px solid var(--border2);
-    border-radius: 12px; cursor: pointer; color: var(--text-muted);
-    font-size: 16px; transition: all 0.2s; flex-shrink: 0;
+    background: transparent; border: none; border-radius: 50%;
+    cursor: pointer; color: var(--accent);
+    transition: background 0.14s;
+    user-select: none; -webkit-user-select: none; -webkit-touch-callout: none;
 }
-.upload-btn:hover, .dm-upload-btn:hover {
-    background: rgba(108,127,255,0.12);
-    color: var(--accent); border-color: rgba(108,127,255,0.4);
-    transform: scale(1.08);
+.upload-btn:hover, .dm-upload-btn:hover,
+#voice-btn-group:hover, .dm-voice-btn:hover { background: rgba(10,132,255,0.12); }
+#voice-btn-group.recording, .dm-voice-btn.recording {
+    background: #ff3b30; color: #fff;
 }
-
+.upload-btn .ic, .dm-upload-btn .ic, #voice-btn-group .ic, .dm-voice-btn .ic { width: 22px; height: 22px; }
 .dm-upload-file { display: none; }
 
 .input-wrap {
     flex: 1; display: flex; align-items: center;
-    background: var(--surface2);
+    background: var(--bg);
     border: 1px solid var(--border2);
-    border-radius: 24px; padding: 0 16px;
-    transition: border-color 0.2s, box-shadow 0.2s;
+    border-radius: 20px; padding: 0 15px;
+    transition: border-color 0.16s;
 }
-.input-wrap:focus-within {
-    border-color: rgba(108,127,255,0.4);
-    box-shadow: 0 0 0 3px rgba(108,127,255,0.08), 0 2px 12px rgba(108,127,255,0.1);
-}
+body.dark .input-wrap { background: #1c1c1e; }
+.input-wrap:focus-within { border-color: var(--accent); }
 
 .msg-input {
     flex: 1; background: transparent; border: none; outline: none;
-    font-family: 'Outfit', 'Noto Sans SC', sans-serif;
-    font-size: 13.5px; font-weight: 400; color: var(--text);
-    padding: 11px 0;
+    font-family: inherit; font-size: 15px; color: var(--text);
+    padding: 9px 0;
 }
 .msg-input::placeholder { color: var(--text-muted); }
 
 .send-btn {
-    flex-shrink: 0;
-    background: linear-gradient(135deg, #7c8fff 0%, #5242ee 100%);
-    color: #fff; border: none;
-    border-radius: 24px; padding: 10px 22px;
-    font-family: 'Outfit', 'Noto Sans SC', sans-serif;
-    font-size: 13px; font-weight: 500;
-    cursor: pointer; letter-spacing: 0.04em;
-    transition: opacity 0.15s, transform 0.14s, box-shadow 0.2s;
-    box-shadow: 0 4px 18px rgba(108,127,255,0.38);
-}
-.send-btn:hover {
-    opacity: 0.9; transform: translateY(-1px);
-    box-shadow: 0 6px 24px rgba(108,127,255,0.52);
-}
-.send-btn:active { transform: scale(0.95); }
-body.light .send-btn { background: linear-gradient(135deg, #6070f0, #4848d8); }
-
-/* ── Voice Button ── */
-#voice-btn-group, .dm-voice-btn {
-    width: 35px; height: 35px; flex-shrink: 0;
+    flex-shrink: 0; width: 36px; height: 36px; padding: 0;
+    background: var(--accent); color: #fff; border: none;
+    border-radius: 50%; cursor: pointer;
     display: flex; align-items: center; justify-content: center;
-    background: var(--surface3); border: 1px solid var(--border2);
-    border-radius: 12px; cursor: pointer; color: var(--text-muted);
-    font-size: 17px; transition: all 0.2s;
-    user-select: none; -webkit-user-select: none; -webkit-touch-callout: none;
+    transition: background 0.14s, transform 0.1s;
 }
-#voice-btn-group:hover, .dm-voice-btn:hover {
-    background: rgba(79,216,150,0.1);
-    color: var(--infj); border-color: rgba(79,216,150,0.38);
-    transform: scale(1.08);
-}
+.send-btn:hover { background: var(--accent-press); }
+.send-btn:active { transform: scale(0.9); }
+.send-btn .ic { width: 20px; height: 20px; stroke-width: 2.2; }
 
 /* ══════════════════════════
-   VOICE BUBBLE
-══════════════════════════ */
-.voice-bubble {
-    display: flex; align-items: center; gap: 9px;
-    min-width: 80px; max-width: 200px;
-    cursor: pointer; user-select: none;
-    padding: 7px 12px;
-    background: rgba(255,255,255,0.04);
-    border: 1px solid rgba(255,255,255,0.09);
-    border-radius: 14px;
-    transition: background 0.16s, transform 0.12s;
-}
-.voice-bubble:hover { background: rgba(255,255,255,0.08); transform: translateY(-1px); }
-.self .voice-bubble {
-    background: rgba(108,127,255,0.11);
-    border-color: rgba(108,127,255,0.24);
-    flex-direction: row-reverse;
-}
-.self .voice-bubble:hover { background: rgba(108,127,255,0.17); }
-
-.voice-icon {
-    width: 20px; height: 20px; flex-shrink: 0;
-    background-repeat: no-repeat; background-position: center; background-size: contain;
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%238a8aac' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z'/%3E%3Cpath d='M19 10v2a7 7 0 0 1-14 0v-2'/%3E%3Cline x1='12' y1='19' x2='12' y2='23'/%3E%3Cline x1='8' y1='23' x2='16' y2='23'/%3E%3C/svg%3E");
-    opacity: 0.72; transition: opacity 0.2s;
-}
-.self .voice-icon {
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%238899ff' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z'/%3E%3Cpath d='M19 10v2a7 7 0 0 1-14 0v-2'/%3E%3Cline x1='12' y1='19' x2='12' y2='23'/%3E%3Cline x1='8' y1='23' x2='16' y2='23'/%3E%3C/svg%3E");
-    opacity: 0.9;
-}
-
-.voice-duration {
-    font-size: 12px; color: var(--text-sub); font-weight: 500;
-    min-width: 20px; font-variant-numeric: tabular-nums;
-}
-.self .voice-duration { color: rgba(136,153,255,0.9); }
-
-.voice-bubble.playing .voice-icon { animation: micPulse 0.85s ease-in-out infinite; opacity: 1; }
-@keyframes micPulse { 0%,100%{transform:scale(1);opacity:0.65} 50%{transform:scale(1.18);opacity:1} }
-
-.voice-dot {
-    width: 5px; height: 5px;
-    background: #ff5555; border-radius: 50%;
-    position: absolute; top: -2px; right: -8px;
-}
-.self .voice-dot { display: none; }
-
-.voice-convert-btn {
-    font-size: 10px; color: var(--text-muted);
-    border: 1px solid var(--border2); border-radius: 6px;
-    padding: 2px 6px; margin-left: 4px; cursor: pointer;
-    opacity: 0.55; transition: opacity 0.2s, background 0.15s, transform 0.12s;
-    white-space: nowrap; background: transparent;
-}
-.voice-convert-btn:hover { opacity: 1; background: rgba(255,255,255,0.08); transform: translateY(-1px); }
-.self .voice-convert-btn {
-    margin-left: 0; margin-right: 4px;
-    color: rgba(255,255,255,0.65); border-color: rgba(255,255,255,0.2);
-}
-
-/* ── Image Loading ── */
-.img-loading {
-    display: flex; align-items: center; justify-content: center;
-    width: 200px; height: 160px;
-    background: rgba(255,255,255,0.04);
-    border-radius: 12px; margin-top: 6px;
-    color: var(--text-muted); font-size: 12px;
-}
-.img-loading::after { content: '✨ 绘图中...'; animation: pulseText 1.6s infinite; }
-
-/* ══════════════════════════
-   MOMENTS PANEL
+   MOMENTS
 ══════════════════════════ */
 #panel-moments { height: 100%; overflow: hidden; position: relative; }
 
@@ -739,177 +545,105 @@ body.light .send-btn { background: linear-gradient(135deg, #6070f0, #4848d8); }
     backdrop-filter: var(--glass-blur);
     -webkit-backdrop-filter: var(--glass-blur);
     border-bottom: 1px solid var(--border);
-    padding: 0 24px; height: 64px;
+    padding: 0 18px; height: 56px;
     display: flex; align-items: center; justify-content: space-between;
-    flex-shrink: 0;
-    position: absolute; top: 0; left: 0; right: 0; z-index: 10;
+    flex-shrink: 0; position: absolute; top: 0; left: 0; right: 0; z-index: 10;
 }
-body.light .moments-header { background: rgba(255,255,255,0.92); }
+.moments-header-title { font-size: 16px; font-weight: 600; color: var(--text); letter-spacing: -0.01em; }
 
-.moments-header-title {
-    font-family: 'Noto Serif SC', serif;
-    font-size: 16px; font-weight: 600;
-    background: linear-gradient(130deg, #e8a0ff, #a0b8ff);
-    -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
-}
-
-.moments-scroll-area {
-    flex: 1; overflow-y: auto;
-    background: var(--bg);
-    padding-top: 64px;
-}
+.moments-scroll-area { flex: 1; overflow-y: auto; background: var(--bg2); padding-top: 56px; }
+body.dark .moments-scroll-area { background: #000; }
 
 .moments-cover {
-    position: relative; height: 240px;
-    background: linear-gradient(135deg, #12132a 0%, #0a0b1c 100%);
+    position: relative; height: 200px;
+    background: linear-gradient(135deg, #3a3a45 0%, #1a1a22 100%);
     background-image: url('https://images.unsplash.com/photo-1493246507139-91e8fad9978e?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80');
     background-size: cover; background-position: center;
     display: flex; align-items: flex-end; justify-content: flex-end;
-    padding: 0 26px; margin-bottom: 36px;
+    padding: 0 22px; margin-bottom: 42px;
 }
 .moments-cover::after {
     content: ''; position: absolute; inset: 0;
-    background: linear-gradient(180deg, rgba(0,0,0,0.08) 0%, rgba(0,0,0,0.65) 100%);
+    background: linear-gradient(180deg, rgba(0,0,0,0.05) 0%, rgba(0,0,0,0.5) 100%);
 }
-
-.my-profile {
-    display: flex; align-items: flex-start; gap: 14px;
-    transform: translateY(22px); z-index: 2;
-}
-.my-name {
-    color: #fff; font-weight: 600; font-size: 15px;
-    text-shadow: 0 2px 8px rgba(0,0,0,0.7);
-    margin-bottom: 28px;
-}
+.my-profile { display: flex; align-items: flex-start; gap: 14px; transform: translateY(28px); z-index: 2; }
+.my-name { color: #fff; font-weight: 600; font-size: 15px; text-shadow: 0 1px 6px rgba(0,0,0,0.6); margin-bottom: 30px; }
 .my-avatar-wrap {
-    width: 68px; height: 68px; border-radius: 16px;
-    padding: 3px;
-    background: rgba(255,255,255,0.12);
-    box-shadow: 0 6px 24px rgba(0,0,0,0.45);
+    width: 66px; height: 66px; border-radius: 50%; padding: 3px;
+    background: var(--bg); box-shadow: 0 4px 16px rgba(0,0,0,0.35);
     display: flex; align-items: center; justify-content: center;
-    backdrop-filter: blur(6px);
 }
-.my-avatar-wrap svg, .my-avatar-wrap img {
-    width: 100%; height: 100%;
-    border-radius: 13px; display: block; object-fit: cover;
-}
+.my-avatar-wrap svg, .my-avatar-wrap img { width: 100%; height: 100%; border-radius: 50%; display: block; object-fit: cover; }
 
-#moments-list { padding: 0 22px 32px; }
+#moments-list { padding: 0 16px 32px; max-width: 640px; margin: 0 auto; }
 
 .moment-card {
     background: var(--surface);
     border: 1px solid var(--border);
-    border-radius: 20px;
-    padding: 20px 22px 18px;
+    border-radius: 16px; padding: 16px 18px;
     margin-bottom: 12px;
-    transition: border-color 0.25s, transform 0.22s, box-shadow 0.25s;
+    transition: transform 0.18s, box-shadow 0.2s;
     position: relative; overflow: hidden;
 }
-/* Color left strip */
-.moment-card::before {
-    content: ''; position: absolute; left: 0; top: 0; bottom: 0;
-    width: 3px; border-radius: 20px 0 0 20px;
-}
-.moment-card[data-role="ENFP"]::before { background: var(--enfp); box-shadow: 3px 0 12px var(--glow-enfp); }
-.moment-card[data-role="INFP"]::before { background: var(--infp); box-shadow: 3px 0 12px var(--glow-infp); }
-.moment-card[data-role="ENTP"]::before { background: var(--entp); box-shadow: 3px 0 12px var(--glow-entp); }
-.moment-card[data-role="ENTJ"]::before { background: var(--entj); box-shadow: 3px 0 12px var(--glow-entj); }
-.moment-card[data-role="ESTJ"]::before { background: var(--estj); box-shadow: 3px 0 12px var(--glow-estj); }
-.moment-card[data-role="ENFJ"]::before { background: var(--enfj); box-shadow: 3px 0 12px var(--glow-enfj); }
+.moment-card::before { display: none; }
+.moment-card:hover { transform: translateY(-1px); box-shadow: 0 6px 24px rgba(0,0,0,0.08); }
+body.dark .moment-card:hover { box-shadow: 0 6px 24px rgba(0,0,0,0.4); }
 
-.moment-card:hover {
-    border-color: var(--border2);
-    transform: translateY(-2px);
-    box-shadow: 0 12px 40px rgba(0,0,0,0.3);
-}
-
-.moment-header { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; }
+.moment-header { display: flex; align-items: center; gap: 11px; margin-bottom: 12px; }
 .moment-avatar {
-    width: 46px; height: 46px; border-radius: 14px;
+    width: 44px; height: 44px; border-radius: 50%;
     display: flex; align-items: center; justify-content: center;
     flex-shrink: 0; overflow: hidden;
 }
 .moment-avatar svg { width: 100%; height: 100%; display: block; }
-.moment-avatar img { width: 100%; height: 100%; object-fit: cover; border-radius: 14px; }
-.moment-avatar.ENFP { box-shadow: 0 3px 14px var(--glow-enfp); }
-.moment-avatar.INFP { box-shadow: 0 3px 14px var(--glow-infp); }
-.moment-avatar.ENTP { box-shadow: 0 3px 14px var(--glow-entp); }
-.moment-avatar.ENTJ { box-shadow: 0 3px 14px var(--glow-entj); }
-.moment-avatar.ESTJ { box-shadow: 0 3px 14px var(--glow-estj); }
-.moment-avatar.ENFJ { box-shadow: 0 3px 14px var(--glow-enfj); }
+.moment-avatar img { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; }
 
 .moment-meta { flex: 1; }
-.moment-name { font-size: 13px; font-weight: 600; color: var(--text); }
-.moment-time { font-size: 10px; color: var(--text-muted); margin-top: 3px; letter-spacing: 0.04em; }
+.moment-name { font-size: 14px; font-weight: 600; color: var(--text); }
+.moment-time { font-size: 11.5px; color: var(--text-muted); margin-top: 2px; }
 
-.moment-content {
-    font-size: 13.5px; line-height: 1.85;
-    color: var(--text-sub); margin-bottom: 16px;
-}
+.moment-content { font-size: 14.5px; line-height: 1.55; color: var(--text); margin-bottom: 12px; }
 .moment-image {
-    width: 100%; max-height: 380px; min-height: 180px;
-    object-fit: cover; border-radius: 13px;
-    margin-top: 10px; cursor: zoom-in;
-    background: rgba(255,255,255,0.04);
+    width: 100%; max-height: 360px; min-height: 0;
+    object-fit: cover; border-radius: 12px; margin-top: 8px; cursor: zoom-in;
+    background: var(--surface2);
 }
 
-.moment-actions {
-    display: flex; align-items: center; gap: 8px;
-    padding-top: 14px; border-top: 1px solid var(--border);
-}
-
+.moment-actions { display: flex; align-items: center; gap: 8px; padding-top: 12px; border-top: 1px solid var(--border); }
 .action-btn {
     display: flex; align-items: center; gap: 6px;
-    cursor: pointer; font-size: 12px; color: var(--text-muted);
-    padding: 5px 14px; border-radius: 20px;
-    border: 1px solid var(--border2);
-    background: rgba(255,255,255,0.03);
-    transition: all 0.18s; font-family: 'Outfit', 'Noto Sans SC', sans-serif;
+    cursor: pointer; font-size: 13px; color: var(--text-sub);
+    padding: 5px 13px; border-radius: 18px;
+    border: 1px solid var(--border2); background: transparent;
+    transition: background 0.14s, color 0.14s; font-family: inherit;
 }
-.action-btn:hover {
-    background: rgba(255,255,255,0.07);
-    border-color: rgba(255,255,255,0.18);
-    color: var(--text); transform: translateY(-1px);
-}
-.action-btn.liked {
-    background: rgba(255,80,80,0.09);
-    border-color: rgba(255,80,80,0.3);
-    color: #ff6b6b;
-}
-.action-btn .icon { font-size: 13px; transition: transform 0.22s cubic-bezier(0.34,1.56,0.64,1); }
-.action-btn:hover .icon { transform: scale(1.22); }
+.action-btn:hover { background: rgba(120,120,130,0.1); color: var(--text); }
+.action-btn.liked { background: rgba(255,59,48,0.1); border-color: rgba(255,59,48,0.3); color: #ff3b30; }
+.action-btn .icon { font-size: 13px; transition: transform 0.2s; }
+.action-btn:hover .icon { transform: scale(1.15); }
+.like-names { font-size: 12px; color: var(--accent); margin-left: 6px; flex: 1; }
 
-.like-names { font-size: 11px; color: rgba(108,127,255,0.75); margin-left: 6px; flex: 1; }
-
-.comment-section {
-    margin-top: 12px;
-    background: rgba(0,0,0,0.14);
-    border-radius: 12px; padding: 10px 14px;
-    display: none;
-}
+.comment-section { margin-top: 12px; background: var(--bg2); border-radius: 12px; padding: 10px 14px; display: none; }
+body.dark .comment-section { background: rgba(255,255,255,0.05); }
 .comment-section.has-comments { display: block; }
 .comment-input-area { display: none; margin-top: 10px; }
 .comment-input-area.visible { display: flex; gap: 8px; }
 .comment-input {
-    flex: 1; background: var(--bg);
-    border: 1px solid var(--border2); border-radius: 16px;
-    padding: 7px 13px; font-size: 13px; color: var(--text); outline: none;
-    transition: border-color 0.2s;
-    font-family: 'Outfit', 'Noto Sans SC', sans-serif;
+    flex: 1; background: var(--bg); border: 1px solid var(--border2); border-radius: 16px;
+    padding: 7px 13px; font-size: 14px; color: var(--text); outline: none;
+    transition: border-color 0.16s; font-family: inherit;
 }
-.comment-input:focus { border-color: rgba(108,127,255,0.4); }
+.comment-input:focus { border-color: var(--accent); }
 .comment-submit {
-    font-size: 12px; padding: 5px 14px;
-    background: var(--accent); color: white;
-    border: none; border-radius: 14px; cursor: pointer;
-    transition: opacity 0.15s, transform 0.12s;
+    font-size: 13px; padding: 6px 15px; background: var(--accent); color: white;
+    border: none; border-radius: 16px; cursor: pointer; transition: background 0.14s;
 }
-.comment-submit:hover { opacity: 0.85; transform: translateY(-1px); }
+.comment-submit:hover { background: var(--accent-press); }
 
 .comment-list { display: flex; flex-direction: column; gap: 7px; }
-.comment-item { font-size: 12.5px; line-height: 1.65; color: var(--text-sub); }
+.comment-item { font-size: 13.5px; line-height: 1.5; color: var(--text-sub); }
 .comment-role { font-weight: 600; margin-right: 4px; }
-.comment-role.我    { color: var(--infj); }
+.comment-role.我    { color: var(--accent); }
 .comment-role.ENFP { color: var(--enfp); }
 .comment-role.INFP { color: var(--infp); }
 .comment-role.ENTP { color: var(--entp); }
@@ -918,53 +652,35 @@ body.light .moments-header { background: rgba(255,255,255,0.92); }
 .comment-role.ENFJ { color: var(--enfj); }
 
 .moments-gen-btn {
-    display: flex; align-items: center; justify-content: center;
-    gap: 8px; margin: 0 auto 22px;
-    padding: 10px 28px;
-    background: rgba(108,127,255,0.05);
-    border: 1px dashed rgba(108,127,255,0.25);
-    border-radius: 26px;
-    font-size: 12px; color: var(--text-muted);
-    cursor: pointer; font-family: 'Outfit', 'Noto Sans SC', sans-serif;
-    transition: all 0.22s;
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    margin: 0 auto 20px; padding: 9px 24px;
+    background: transparent; border: 1px solid var(--border2);
+    border-radius: 22px; font-size: 13px; color: var(--text-sub);
+    cursor: pointer; font-family: inherit; transition: background 0.16s;
 }
-.moments-gen-btn:hover {
-    background: rgba(108,127,255,0.12);
-    border-color: rgba(108,127,255,0.52);
-    color: #a0aaff; transform: translateY(-1px);
-}
+.moments-gen-btn:hover { background: rgba(120,120,130,0.1); color: var(--text); }
 
-.moments-empty {
-    text-align: center; padding: 80px 20px;
-    color: var(--text-muted); font-size: 13px;
-}
-.moments-empty .emoji { font-size: 36px; margin-bottom: 14px; filter: grayscale(0.15); }
+.moments-empty { text-align: center; padding: 80px 20px; color: var(--text-muted); font-size: 14px; }
+.moments-empty .emoji { display: flex; justify-content: center; margin-bottom: 12px; color: var(--text-muted); }
+.moments-empty .emoji .ic { width: 40px; height: 40px; stroke-width: 1.3; }
 
 /* ══════════════════════════
    @ MENTION LIST
 ══════════════════════════ */
 #mention-list {
-    position: absolute; bottom: 72px; left: 18px;
+    position: absolute; bottom: 64px; left: 16px;
     background: var(--surface);
-    backdrop-filter: var(--glass-blur);
-    -webkit-backdrop-filter: var(--glass-blur);
-    border: 1px solid var(--border2);
-    border-radius: 16px;
-    box-shadow: 0 16px 48px rgba(0,0,0,0.45);
+    border: 1px solid var(--border2); border-radius: 14px;
+    box-shadow: 0 12px 40px rgba(0,0,0,0.18);
     display: none; flex-direction: column; overflow: hidden;
-    z-index: 100; min-width: 150px;
+    z-index: 100; min-width: 160px;
 }
-#mention-list.visible { display: flex; animation: slideUp 0.18s cubic-bezier(0.22,0.61,0.36,1); }
-@keyframes slideUp { from { opacity:0; transform:translateY(8px) scale(0.97); } to { opacity:1; transform:translateY(0) scale(1); } }
-
-.mention-item {
-    padding: 10px 16px; display: flex; align-items: center;
-    gap: 10px; cursor: pointer;
-    transition: background 0.12s;
-    font-size: 13px; color: var(--text);
-}
-.mention-item:hover, .mention-item.selected { background: rgba(108,127,255,0.12); }
-.mention-avatar { width: 24px; height: 24px; border-radius: 8px; overflow: hidden; flex-shrink: 0; }
+body.dark #mention-list { box-shadow: 0 12px 40px rgba(0,0,0,0.6); }
+#mention-list.visible { display: flex; animation: slideUp 0.16s ease-out; }
+@keyframes slideUp { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:translateY(0); } }
+.mention-item { padding: 10px 15px; display: flex; align-items: center; gap: 10px; cursor: pointer; transition: background 0.12s; font-size: 14px; color: var(--text); }
+.mention-item:hover, .mention-item.selected { background: rgba(10,132,255,0.12); }
+.mention-avatar { width: 26px; height: 26px; border-radius: 50%; overflow: hidden; flex-shrink: 0; }
 .mention-avatar svg { width: 100%; height: 100%; }
 
 /* ══════════════════════════
@@ -972,116 +688,86 @@ body.light .moments-header { background: rgba(255,255,255,0.92); }
 ══════════════════════════ */
 #modal-overlay {
     position: fixed; inset: 0;
-    background: rgba(3,4,12,0.72);
-    backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px);
+    background: rgba(0,0,0,0.4);
+    backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
     z-index: 100; display: flex; align-items: center; justify-content: center;
-    opacity: 0; pointer-events: none; transition: opacity 0.28s;
+    opacity: 0; pointer-events: none; transition: opacity 0.22s;
 }
 #modal-overlay.open { opacity: 1; pointer-events: all; }
-body.light #modal-overlay { background: rgba(10,10,30,0.32); }
 
 #modal {
     background: var(--surface);
-    border: 1px solid var(--border2);
-    border-radius: 24px;
-    width: 700px; max-width: calc(100vw - 32px); max-height: 88vh;
+    border: 1px solid var(--border);
+    border-radius: 18px;
+    width: 680px; max-width: calc(100vw - 32px); max-height: 88vh;
     display: flex; flex-direction: column;
-    box-shadow: 0 48px 120px rgba(0,0,0,0.72), inset 0 1px 0 rgba(255,255,255,0.06);
-    transform: translateY(22px) scale(0.97);
-    transition: transform 0.3s cubic-bezier(0.22,0.61,0.36,1);
+    box-shadow: 0 24px 70px rgba(0,0,0,0.25);
+    transform: translateY(14px) scale(0.98);
+    transition: transform 0.24s cubic-bezier(0.22,0.61,0.36,1);
     overflow: hidden;
 }
+body.dark #modal { box-shadow: 0 24px 70px rgba(0,0,0,0.7); }
 #modal-overlay.open #modal { transform: translateY(0) scale(1); }
 
-#modal-header {
-    padding: 22px 26px 0;
-    display: flex; align-items: center; justify-content: space-between;
-    flex-shrink: 0;
-}
-#modal-title {
-    font-family: 'Noto Serif SC', serif;
-    font-size: 16px; font-weight: 600;
-    background: linear-gradient(130deg, #a0a8ff, #c890ff);
-    -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
-}
+#modal-header { padding: 20px 22px 0; display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; }
+#modal-title { font-size: 17px; font-weight: 650; color: var(--text); letter-spacing: -0.01em; }
 #modal-close {
-    width: 30px; height: 30px; border-radius: 9px;
-    border: 1px solid var(--border2); background: rgba(255,255,255,0.04);
+    width: 30px; height: 30px; border-radius: 50%;
+    border: none; background: rgba(120,120,130,0.14);
     cursor: pointer; display: flex; align-items: center; justify-content: center;
-    color: var(--text-sub); font-size: 13px;
-    transition: background 0.15s, color 0.15s, transform 0.2s cubic-bezier(0.34,1.56,0.64,1);
+    color: var(--text-sub); transition: background 0.14s, color 0.14s;
 }
-#modal-close:hover { background: rgba(255,255,255,0.1); color: var(--text); transform: scale(1.12) rotate(8deg); }
+#modal-close:hover { background: rgba(120,120,130,0.24); color: var(--text); }
+#modal-close .ic { width: 16px; height: 16px; stroke-width: 2; }
 
 #modal-tabs {
-    display: flex; gap: 0; padding: 18px 26px 0;
+    display: flex; gap: 2px; padding: 16px 22px 0;
     border-bottom: 1px solid var(--border); flex-shrink: 0;
     overflow-x: auto; scrollbar-width: none;
 }
 #modal-tabs::-webkit-scrollbar { display: none; }
-
 .modal-tab {
-    padding: 8px 15px; font-size: 12px; color: var(--text-muted);
+    padding: 8px 14px; font-size: 13px; color: var(--text-muted);
     cursor: pointer; border-bottom: 2px solid transparent;
-    margin-bottom: -1px; transition: color 0.15s, border-color 0.15s;
-    letter-spacing: 0.05em; white-space: nowrap;
-    font-family: 'Outfit', sans-serif; font-weight: 500;
+    margin-bottom: -1px; transition: color 0.14s, border-color 0.14s;
+    white-space: nowrap; font-weight: 500;
 }
 .modal-tab:hover { color: var(--text-sub); }
-.modal-tab.active { color: var(--text); border-bottom-color: var(--accent); }
-.modal-tab.tab-ENFP.active { color: var(--enfp); border-bottom-color: var(--enfp); }
-.modal-tab.tab-INFP.active { color: var(--infp); border-bottom-color: var(--infp); }
-.modal-tab.tab-ENTP.active { color: var(--entp); border-bottom-color: var(--entp); }
-.modal-tab.tab-ENTJ.active { color: var(--entj); border-bottom-color: var(--entj); }
-.modal-tab.tab-ESTJ.active { color: var(--estj); border-bottom-color: var(--estj); }
-.modal-tab.tab-ENFJ.active { color: var(--enfj); border-bottom-color: var(--enfj); }
+.modal-tab.active { color: var(--accent); border-bottom-color: var(--accent); }
 
-#modal-body { flex: 1; overflow-y: auto; padding: 24px 26px; }
-#modal-body::-webkit-scrollbar { width: 4px; }
-#modal-body::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); border-radius: 2px; }
-
+#modal-body { flex: 1; overflow-y: auto; padding: 22px; }
 .tab-panel { display: none; }
-.tab-panel.active { display: block; animation: tabIn 0.18s ease-out; }
+.tab-panel.active { display: block; animation: tabIn 0.16s ease-out; }
 @keyframes tabIn { from { opacity:0; transform:translateY(4px); } to { opacity:1; transform:translateY(0); } }
 
-.field { margin-bottom: 22px; }
+.field { margin-bottom: 20px; }
 .field-label {
-    font-size: 10.5px; font-weight: 600; color: var(--text-sub);
-    letter-spacing: 0.1em; text-transform: uppercase;
-    margin-bottom: 10px; display: flex; align-items: center; gap: 6px;
-    font-family: 'Outfit', sans-serif;
+    font-size: 13px; font-weight: 600; color: var(--text);
+    margin-bottom: 9px; display: flex; align-items: center; gap: 6px;
 }
-.field-hint { font-size: 10px; font-weight: 400; color: var(--text-muted); margin-left: auto; letter-spacing: 0.02em; text-transform: none; }
+.field-hint { font-size: 11px; font-weight: 400; color: var(--text-muted); margin-left: auto; }
 
 .persona-box {
     background: var(--bg2); border: 1px solid var(--border);
-    border-radius: 12px; padding: 14px 16px;
-    font-size: 12px; line-height: 1.8; color: var(--text-muted);
-    white-space: pre-wrap; word-break: break-all;
+    border-radius: 10px; padding: 12px 14px;
+    font-size: 12.5px; line-height: 1.7; color: var(--text-sub);
+    white-space: pre-wrap; word-break: break-word;
     max-height: 100px; overflow-y: auto;
-    transition: max-height 0.3s cubic-bezier(0.4,0,0.2,1);
+    transition: max-height 0.28s ease;
 }
 .persona-box.expanded { max-height: 260px; }
-.expand-btn {
-    font-size: 10.5px; color: var(--text-muted);
-    cursor: pointer; margin-top: 6px; display: inline-block;
-    transition: color 0.15s; letter-spacing: 0.04em;
-}
-.expand-btn:hover { color: var(--text-sub); }
+.expand-btn { font-size: 12px; color: var(--accent); cursor: pointer; margin-top: 6px; display: inline-block; }
+.expand-btn:hover { text-decoration: underline; }
 
 textarea.field-input {
-    width: 100%; min-height: 84px;
+    width: 100%; min-height: 80px;
     background: var(--bg2); border: 1px solid var(--border2);
-    border-radius: 12px; padding: 12px 16px;
-    font-family: 'Noto Sans SC', sans-serif;
-    font-size: 13px; font-weight: 300; color: var(--text);
-    line-height: 1.7; resize: vertical; outline: none;
-    transition: border-color 0.2s, box-shadow 0.2s;
+    border-radius: 10px; padding: 11px 14px;
+    font-family: inherit; font-size: 14px; color: var(--text);
+    line-height: 1.6; resize: vertical; outline: none;
+    transition: border-color 0.16s;
 }
-textarea.field-input:focus {
-    border-color: rgba(108,127,255,0.4);
-    box-shadow: 0 0 0 3px rgba(108,127,255,0.07);
-}
+textarea.field-input:focus { border-color: var(--accent); }
 textarea.field-input::placeholder { color: var(--text-muted); }
 
 .slider-row { display: flex; align-items: center; gap: 14px; }
@@ -1090,83 +776,62 @@ input[type=range] {
     background: var(--surface3); border-radius: 2px; outline: none; cursor: pointer;
 }
 input[type=range]::-webkit-slider-thumb {
-    -webkit-appearance: none;
-    width: 17px; height: 17px; border-radius: 50%;
-    background: linear-gradient(135deg, #a0aaff, #7c8fff);
-    border: 2px solid var(--surface); box-shadow: 0 2px 10px rgba(108,127,255,0.55);
-    transition: transform 0.14s cubic-bezier(0.34,1.56,0.64,1), box-shadow 0.14s;
+    -webkit-appearance: none; width: 20px; height: 20px; border-radius: 50%;
+    background: #fff; border: 0.5px solid rgba(0,0,0,0.1);
+    box-shadow: 0 1px 4px rgba(0,0,0,0.25);
+    transition: transform 0.12s;
 }
-input[type=range]::-webkit-slider-thumb:hover {
-    transform: scale(1.28);
-    box-shadow: 0 3px 18px rgba(108,127,255,0.7);
-}
-.slider-value {
-    font-size: 12px; font-weight: 500; color: var(--text-sub);
-    min-width: 40px; text-align: right; font-variant-numeric: tabular-nums;
-    font-family: 'Outfit', sans-serif;
-}
+input[type=range]::-webkit-slider-thumb:hover { transform: scale(1.1); }
+.slider-value { font-size: 13px; font-weight: 500; color: var(--text-sub); min-width: 42px; text-align: right; font-variant-numeric: tabular-nums; }
 
 .toggle-row { display: flex; align-items: center; justify-content: space-between; }
-.toggle { position: relative; width: 40px; height: 22px; }
+.toggle { position: relative; width: 44px; height: 26px; }
 .toggle input { opacity: 0; width: 0; height: 0; }
 .toggle-slider {
-    position: absolute; inset: 0;
-    background: var(--surface3); border: 1px solid var(--border2);
-    border-radius: 22px; cursor: pointer;
-    transition: background 0.28s, border-color 0.28s;
+    position: absolute; inset: 0; background: rgba(120,120,130,0.3);
+    border-radius: 26px; cursor: pointer; transition: background 0.26s;
 }
 .toggle-slider::before {
-    content: ''; position: absolute;
-    width: 15px; height: 15px; left: 3px; top: 3px;
-    background: var(--text-muted); border-radius: 50%;
-    transition: transform 0.28s cubic-bezier(0.34,1.56,0.64,1), background 0.28s;
+    content: ''; position: absolute; width: 22px; height: 22px; left: 2px; top: 2px;
+    background: #fff; border-radius: 50%;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.3);
+    transition: transform 0.26s cubic-bezier(0.34,1.3,0.64,1);
 }
-.toggle input:checked + .toggle-slider { background: rgba(108,127,255,0.2); border-color: rgba(108,127,255,0.4); }
-.toggle input:checked + .toggle-slider::before {
-    transform: translateX(18px);
-    background: var(--accent);
-    box-shadow: 0 0 10px rgba(108,127,255,0.65);
-}
+.toggle input:checked + .toggle-slider { background: #34c759; }
+.toggle input:checked + .toggle-slider::before { transform: translateX(18px); }
 
-.field-divider { border: none; border-top: 1px solid var(--border); margin: 22px 0; }
-.field-desc { font-size: 10.5px; color: var(--text-muted); margin-top: 7px; line-height: 1.55; letter-spacing: 0.02em; }
+.field-divider { border: none; border-top: 1px solid var(--border); margin: 20px 0; }
+.field-desc { font-size: 12px; color: var(--text-muted); margin-top: 7px; line-height: 1.5; }
 
 #modal-footer {
-    padding: 16px 26px;
-    border-top: 1px solid var(--border);
-    display: flex; align-items: center; justify-content: space-between;
-    flex-shrink: 0;
-    background: rgba(0,0,0,0.18);
+    padding: 14px 22px; border-top: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: space-between; flex-shrink: 0;
+    background: var(--bg2);
 }
-#save-status { font-size: 11px; color: var(--text-muted); transition: color 0.3s; }
-#save-status.ok  { color: var(--infj); }
-#save-status.err { color: #ff5555; }
+#save-status { font-size: 12px; color: var(--text-muted); transition: color 0.3s; }
+#save-status.ok  { color: #34c759; }
+#save-status.err { color: #ff3b30; }
 
 #save-btn {
-    background: linear-gradient(135deg, #7c8fff, #5242ee); color: white;
-    border: none; border-radius: 12px; padding: 9px 24px;
-    font-family: 'Outfit', 'Noto Sans SC', sans-serif; font-size: 13px; font-weight: 500;
-    cursor: pointer; box-shadow: 0 4px 16px rgba(108,127,255,0.4);
-    transition: opacity 0.15s, transform 0.14s, box-shadow 0.2s;
+    background: var(--accent); color: white; border: none; border-radius: 10px;
+    padding: 9px 22px; font-family: inherit; font-size: 14px; font-weight: 600;
+    cursor: pointer; transition: background 0.14s, transform 0.1s;
 }
-#save-btn:hover { opacity: 0.88; transform: translateY(-1px); box-shadow: 0 6px 22px rgba(108,127,255,0.55); }
-#save-btn:active { transform: scale(0.96); }
-
+#save-btn:hover { background: var(--accent-press); }
+#save-btn:active { transform: scale(0.97); }
 #reset-btn {
-    background: rgba(255,255,255,0.04); color: var(--text-muted);
-    border: 1px solid var(--border2); border-radius: 12px;
-    padding: 9px 16px; font-family: 'Outfit', 'Noto Sans SC', sans-serif;
-    font-size: 12.5px; font-weight: 400; cursor: pointer;
-    transition: background 0.15s, color 0.15s, border-color 0.15s;
+    background: transparent; color: var(--text-sub);
+    border: 1px solid var(--border2); border-radius: 10px;
+    padding: 9px 16px; font-family: inherit; font-size: 13.5px; cursor: pointer;
+    transition: background 0.14s;
 }
-#reset-btn:hover { background: rgba(255,255,255,0.08); color: var(--text-sub); border-color: var(--border2); }
+#reset-btn:hover { background: rgba(120,120,130,0.1); color: var(--text); }
 
 /* ── Spinner ── */
 .spinner {
     display: inline-block; width: 14px; height: 14px;
-    border: 2px solid rgba(255,255,255,0.1);
-    border-top-color: var(--accent);
-    border-radius: 50%; animation: spin 0.72s linear infinite;
+    border: 2px solid rgba(120,120,130,0.25); border-top-color: var(--accent);
+    border-radius: 50%; animation: spin 0.7s linear infinite;
 }
 @keyframes spin { to { transform: rotate(360deg); } }
 
@@ -1174,74 +839,47 @@ input[type=range]::-webkit-slider-thumb:hover {
    HAMBURGER & OVERLAY
 ══════════════════════════ */
 #hamburger {
-    display: none;
-    width: 34px; height: 34px; border-radius: 10px;
-    border: 1px solid var(--border2);
-    background: rgba(255,255,255,0.04);
+    display: none; width: 34px; height: 34px; border-radius: 9px;
+    border: none; background: transparent;
     cursor: pointer; align-items: center; justify-content: center;
-    color: var(--text-sub); font-size: 17px; flex-shrink: 0;
-    transition: background 0.15s, color 0.15s;
+    color: var(--accent); flex-shrink: 0; transition: background 0.14s;
 }
-#hamburger:hover { background: rgba(255,255,255,0.09); color: var(--text); }
-body.light #hamburger { background: rgba(0,0,0,0.04); }
+#hamburger:hover { background: rgba(10,132,255,0.12); }
+#hamburger .ic { width: 22px; height: 22px; }
 
 #sidebar-overlay {
     display: none; position: fixed; inset: 0; z-index: 49;
-    background: rgba(0,0,0,0.65); backdrop-filter: blur(6px);
-    opacity: 0; pointer-events: none; transition: opacity 0.3s;
+    background: rgba(0,0,0,0.35); backdrop-filter: blur(3px);
+    opacity: 0; pointer-events: none; transition: opacity 0.28s;
 }
 #sidebar-overlay.open { opacity: 1; pointer-events: all; }
-
-/* ── Light mode overrides ── */
-body.light #app-title { background: linear-gradient(130deg, #4050d8, #9040c8); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
-body.light .moments-header-title { background: linear-gradient(130deg, #7030c0, #4050d8); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
-body.light #modal-title { background: linear-gradient(130deg, #5060d8, #9040c8); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
-body.light .nav-item.active { background: rgba(70,90,220,0.07); }
-body.light .send-btn { background: linear-gradient(135deg, #6070f0, #4848d8); box-shadow: 0 4px 16px rgba(74,92,232,0.35); }
-body.light .send-btn:hover { box-shadow: 0 6px 24px rgba(74,92,232,0.52); }
-body.light #save-btn { background: linear-gradient(135deg, #6070f0, #4848d8); box-shadow: 0 4px 16px rgba(74,92,232,0.3); }
-body.light .bubble { border-color: var(--border2); }
-body.light .moment-card:hover { box-shadow: 0 10px 36px rgba(0,0,0,0.1); }
-body.light #modal { box-shadow: 0 30px 80px rgba(0,0,0,0.18), inset 0 1px 0 rgba(255,255,255,0.6); }
-body.light .comment-section { background: rgba(0,0,0,0.04); }
-body.light .toggle-slider { background: rgba(0,0,0,0.09); }
-body.light .voice-bubble { background: rgba(0,0,0,0.05); border-color: rgba(0,0,0,0.1); }
-body.light .voice-bubble:hover { background: rgba(0,0,0,0.09); }
 
 /* ══════════════════════════
    MOBILE RESPONSIVE
 ══════════════════════════ */
 @media (max-width: 680px) {
-    :root { --sidebar-w: 80vw; }
+    :root { --sidebar-w: 82vw; }
     #sidebar {
-        position: fixed; left: 0; top: 0; bottom: 0; z-index: 50; max-width: 300px;
+        position: fixed; left: 0; top: 0; bottom: 0; z-index: 50; max-width: 320px;
         transform: translateX(-100%);
-        transition: transform 0.32s cubic-bezier(0.4,0,0.2,1), box-shadow 0.32s;
-        box-shadow: none;
+        transition: transform 0.3s cubic-bezier(0.4,0,0.2,1), box-shadow 0.3s; box-shadow: none;
     }
-    #sidebar.open { transform: translateX(0); box-shadow: 8px 0 48px rgba(0,0,0,0.55); }
+    #sidebar.open { transform: translateX(0); box-shadow: 8px 0 40px rgba(0,0,0,0.4); }
     #sidebar-overlay { display: block; }
     #hamburger { display: flex; }
-    .chat-window { padding: 16px 14px 12px; }
-    .bubble-col { max-width: 80%; }
-    .msg-group { margin-bottom: 14px; }
-    .msg-group.same-sender { margin-top: -8px; }
-    .input-area { padding: 10px 12px; gap: 8px; }
-    .send-btn { padding: 10px 16px; font-size: 13px; }
-    .chat-header { padding: 0 14px; height: 58px; }
-    .moments-header { height: 58px; padding: 0 18px; }
-    .moments-scroll-area { padding-top: 58px; }
-    .bubble { font-size: 13.5px; }
-    #modal { border-radius: 22px 22px 0 0; max-height: 92vh; width: 100%; }
+    .chat-window { padding: 14px 12px 10px; }
+    .bubble-col { max-width: 78%; }
+    .msg-group { margin-bottom: 10px; }
+    .input-area { padding: 8px 10px; gap: 4px; }
+    .chat-header { padding: 0 10px; height: 52px; }
+    .moments-header { height: 52px; padding: 0 14px; }
+    .moments-scroll-area { padding-top: 52px; }
+    #modal { border-radius: 18px 18px 0 0; max-height: 92vh; width: 100%; }
     #modal-overlay { align-items: flex-end; }
-    .moments-cover { height: 180px; }
-    #moments-list { padding: 0 14px 24px; }
-    .nav-item { padding: 9px 11px; margin: 2px 8px; }
-    .nav-avatar { width: 38px; height: 38px; border-radius: 12px; }
+    .moments-cover { height: 170px; }
+    .nav-item { padding: 8px 10px; }
+    .nav-avatar { width: 42px; height: 42px; }
 }
-
-/* ── Avatar color styles for ENFJ ── */
-.msg-avatar.ENFJ { box-shadow: 0 2px 12px var(--glow-enfj); }
 
 </style>
 </head>
@@ -1285,7 +923,7 @@ body.light .voice-bubble:hover { background: rgba(0,0,0,0.09); }
                 <div id="app-title">MBTI 群聊实验室</div>
                 <div class="status-dot"></div>
             </div>
-            <button id="theme-toggle" onclick="toggleTheme()" title="切换明暗主题">🌙</button>
+            <button id="theme-toggle" onclick="toggleTheme()" title="切换明暗主题"><svg class="ic ic-moon" viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg><svg class="ic ic-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg></button>
         </div>
         <div id="app-sub">AI 多智能体模拟系统</div>
         <div id="user-bar" style="display:none;margin-top:10px;padding-top:10px;border-top:1px solid var(--border);align-items:center;justify-content:space-between">
@@ -1379,8 +1017,8 @@ body.light .voice-bubble:hover { background: rgba(0,0,0,0.09); }
             </div>
             <div class="chat-header-right">
                 <div id="typing-bar"></div>
-                <button class="icon-btn" onclick="openModal()" title="调参设置">⚙</button>
-                <button id="hamburger" onclick="openSidebar()" title="菜单">☰</button>
+                <button class="icon-btn" onclick="openModal()" title="调参设置"><svg class="ic" viewBox="0 0 24 24"><line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/></svg></button>
+                <button id="hamburger" onclick="openSidebar()" title="菜单"><svg class="ic" viewBox="0 0 24 24"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg></button>
             </div>
         </div>
         <div class="chat-window" id="chat-window-group">
@@ -1392,16 +1030,16 @@ body.light .voice-bubble:hover { background: rgba(0,0,0,0.09); }
 
         <div class="input-area">
             <!-- Image Upload Button -->
-            <label for="image-upload" class="upload-btn" title="发图片">📷</label>
+            <label for="image-upload" class="upload-btn" title="发图片"><svg class="ic" viewBox="0 0 24 24"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg></label>
             <input type="file" id="image-upload" accept="image/*" style="display: none;">
 
             <!-- Voice Button -->
-            <button class="icon-btn" id="voice-btn-group" title="按住说话" style="margin-right:8px;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;">🎙️</button>
+            <button class="icon-btn" id="voice-btn-group" title="按住说话" style="margin-right:8px;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;"><svg class="ic" viewBox="0 0 24 24"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg></button>
 
             <div class="input-wrap">
                 <input type="text" class="msg-input" id="msg-input-group" placeholder="发消息给群聊…">
             </div>
-            <button class="send-btn" onclick="sendGroup()">发送</button>
+            <button class="send-btn" onclick="sendGroup()" title="发送"><svg class="ic" viewBox="0 0 24 24"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></svg></button>
         </div>
     </div>
 
@@ -1411,16 +1049,16 @@ body.light .voice-bubble:hover { background: rgba(0,0,0,0.09); }
                 <div class="chat-header-avatar ENFP" id="hav-ENFP"></div>
                 <div><div class="chat-header-name">暖暖</div><div class="chat-header-sub">新媒体运营 热情小太阳</div></div>
             </div>
-            <div class="chat-header-right"><div class="typing-bar-dm" id="typing-ENFP"></div><button class="icon-btn" onclick="openSidebar()" title="菜单" style="display:none" id="ham-ENFP">☰</button></div>
+            <div class="chat-header-right"><div class="typing-bar-dm" id="typing-ENFP"></div><button class="icon-btn" onclick="openSidebar()" title="菜单" style="display:none" id="ham-ENFP"><svg class="ic" viewBox="0 0 24 24"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg></button></div>
         </div>
         <div class="chat-window" id="chat-window-dm-ENFP"></div>
         <div class="input-area">
-            <label for="dm-image-upload-ENFP" class="dm-upload-btn" title="发图片">📷</label>
+            <label for="dm-image-upload-ENFP" class="dm-upload-btn" title="发图片"><svg class="ic" viewBox="0 0 24 24"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg></label>
             <input type="file" id="dm-image-upload-ENFP" class="dm-upload-file" accept="image/*" data-role="ENFP">
             <!-- Voice Button -->
-            <button class="icon-btn dm-voice-btn" id="voice-btn-dm-ENFP" data-role="ENFP" title="按住说话" style="margin-right:8px;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;">🎙️</button>
+            <button class="icon-btn dm-voice-btn" id="voice-btn-dm-ENFP" data-role="ENFP" title="按住说话" style="margin-right:8px;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;"><svg class="ic" viewBox="0 0 24 24"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg></button>
             <div class="input-wrap"><input type="text" class="msg-input" id="msg-input-dm-ENFP" placeholder="发消息给 暖暖…" ></div>
-            <button class="send-btn" onclick="sendDM('ENFP')">发送</button>
+            <button class="send-btn" onclick="sendDM('ENFP')" title="发送"><svg class="ic" viewBox="0 0 24 24"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></svg></button>
         </div>
     </div>
 
@@ -1430,15 +1068,15 @@ body.light .voice-bubble:hover { background: rgba(0,0,0,0.09); }
                 <div class="chat-header-avatar INFP" id="hav-INFP"></div>
                 <div><div class="chat-header-name">小沈</div><div class="chat-header-sub">自由插画师 温柔细腻</div></div>
             </div>
-            <div class="chat-header-right"><div class="typing-bar-dm" id="typing-INFP"></div><button class="icon-btn" onclick="openSidebar()" title="菜单" style="display:none" id="ham-INFP">☰</button></div>
+            <div class="chat-header-right"><div class="typing-bar-dm" id="typing-INFP"></div><button class="icon-btn" onclick="openSidebar()" title="菜单" style="display:none" id="ham-INFP"><svg class="ic" viewBox="0 0 24 24"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg></button></div>
         </div>
         <div class="chat-window" id="chat-window-dm-INFP"></div>
         <div class="input-area">
-            <label for="dm-image-upload-INFP" class="dm-upload-btn" title="发图片">📷</label>
+            <label for="dm-image-upload-INFP" class="dm-upload-btn" title="发图片"><svg class="ic" viewBox="0 0 24 24"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg></label>
             <input type="file" id="dm-image-upload-INFP" class="dm-upload-file" accept="image/*" data-role="INFP">
-            <button class="icon-btn dm-voice-btn" id="voice-btn-dm-INFP" data-role="INFP" title="按住说话" style="margin-right:8px;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;">🎙️</button>
+            <button class="icon-btn dm-voice-btn" id="voice-btn-dm-INFP" data-role="INFP" title="按住说话" style="margin-right:8px;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;"><svg class="ic" viewBox="0 0 24 24"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg></button>
             <div class="input-wrap"><input type="text" class="msg-input" id="msg-input-dm-INFP" placeholder="发消息给 小沈…" ></div>
-            <button class="send-btn" onclick="sendDM('INFP')">发送</button>
+            <button class="send-btn" onclick="sendDM('INFP')" title="发送"><svg class="ic" viewBox="0 0 24 24"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></svg></button>
         </div>
     </div>
 
@@ -1448,15 +1086,15 @@ body.light .voice-bubble:hover { background: rgba(0,0,0,0.09); }
                 <div class="chat-header-avatar ENTP" id="hav-ENTP"></div>
                 <div><div class="chat-header-name">老程</div><div class="chat-header-sub">产品经理 逻辑鬼才</div></div>
             </div>
-            <div class="chat-header-right"><div class="typing-bar-dm" id="typing-ENTP"></div><button class="icon-btn" onclick="openSidebar()" title="菜单" style="display:none" id="ham-ENTP">☰</button></div>
+            <div class="chat-header-right"><div class="typing-bar-dm" id="typing-ENTP"></div><button class="icon-btn" onclick="openSidebar()" title="菜单" style="display:none" id="ham-ENTP"><svg class="ic" viewBox="0 0 24 24"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg></button></div>
         </div>
         <div class="chat-window" id="chat-window-dm-ENTP"></div>
         <div class="input-area">
-            <label for="dm-image-upload-ENTP" class="dm-upload-btn" title="发图片">📷</label>
+            <label for="dm-image-upload-ENTP" class="dm-upload-btn" title="发图片"><svg class="ic" viewBox="0 0 24 24"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg></label>
             <input type="file" id="dm-image-upload-ENTP" class="dm-upload-file" accept="image/*" data-role="ENTP">
-            <button class="icon-btn dm-voice-btn" id="voice-btn-dm-ENTP" data-role="ENTP" title="按住说话" style="margin-right:8px;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;">🎙️</button>
+            <button class="icon-btn dm-voice-btn" id="voice-btn-dm-ENTP" data-role="ENTP" title="按住说话" style="margin-right:8px;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;"><svg class="ic" viewBox="0 0 24 24"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg></button>
             <div class="input-wrap"><input type="text" class="msg-input" id="msg-input-dm-ENTP" placeholder="发消息给 老程…" ></div>
-            <button class="send-btn" onclick="sendDM('ENTP')">发送</button>
+            <button class="send-btn" onclick="sendDM('ENTP')" title="发送"><svg class="ic" viewBox="0 0 24 24"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></svg></button>
         </div>
     </div>
 
@@ -1466,15 +1104,15 @@ body.light .voice-bubble:hover { background: rgba(0,0,0,0.09); }
                 <div class="chat-header-avatar ENTJ" id="hav-ENTJ"></div>
                 <div><div class="chat-header-name">王姐</div><div class="chat-header-sub">创业合伙人 效率至上</div></div>
             </div>
-            <div class="chat-header-right"><div class="typing-bar-dm" id="typing-ENTJ"></div><button class="icon-btn" onclick="openSidebar()" title="菜单" style="display:none" id="ham-ENTJ">☰</button></div>
+            <div class="chat-header-right"><div class="typing-bar-dm" id="typing-ENTJ"></div><button class="icon-btn" onclick="openSidebar()" title="菜单" style="display:none" id="ham-ENTJ"><svg class="ic" viewBox="0 0 24 24"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg></button></div>
         </div>
         <div class="chat-window" id="chat-window-dm-ENTJ"></div>
         <div class="input-area">
-            <label for="dm-image-upload-ENTJ" class="dm-upload-btn" title="发图片">📷</label>
+            <label for="dm-image-upload-ENTJ" class="dm-upload-btn" title="发图片"><svg class="ic" viewBox="0 0 24 24"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg></label>
             <input type="file" id="dm-image-upload-ENTJ" class="dm-upload-file" accept="image/*" data-role="ENTJ">
-            <button class="icon-btn dm-voice-btn" id="voice-btn-dm-ENTJ" data-role="ENTJ" title="按住说话" style="margin-right:8px;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;">🎙️</button>
+            <button class="icon-btn dm-voice-btn" id="voice-btn-dm-ENTJ" data-role="ENTJ" title="按住说话" style="margin-right:8px;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;"><svg class="ic" viewBox="0 0 24 24"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg></button>
             <div class="input-wrap"><input type="text" class="msg-input" id="msg-input-dm-ENTJ" placeholder="发消息给 王姐…" ></div>
-            <button class="send-btn" onclick="sendDM('ENTJ')">发送</button>
+            <button class="send-btn" onclick="sendDM('ENTJ')" title="发送"><svg class="ic" viewBox="0 0 24 24"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></svg></button>
         </div>
     </div>
 
@@ -1484,15 +1122,15 @@ body.light .voice-bubble:hover { background: rgba(0,0,0,0.09); }
                 <div class="chat-header-avatar ESTJ" id="hav-ESTJ"></div>
                 <div><div class="chat-header-name">李姐</div><div class="chat-header-sub">财务经理 操心担当</div></div>
             </div>
-            <div class="chat-header-right"><div class="typing-bar-dm" id="typing-ESTJ"></div><button class="icon-btn" onclick="openSidebar()" title="菜单" style="display:none" id="ham-ESTJ">☰</button></div>
+            <div class="chat-header-right"><div class="typing-bar-dm" id="typing-ESTJ"></div><button class="icon-btn" onclick="openSidebar()" title="菜单" style="display:none" id="ham-ESTJ"><svg class="ic" viewBox="0 0 24 24"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg></button></div>
         </div>
         <div class="chat-window" id="chat-window-dm-ESTJ"></div>
         <div class="input-area">
-            <label for="dm-image-upload-ESTJ" class="dm-upload-btn" title="发图片">📷</label>
+            <label for="dm-image-upload-ESTJ" class="dm-upload-btn" title="发图片"><svg class="ic" viewBox="0 0 24 24"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg></label>
             <input type="file" id="dm-image-upload-ESTJ" class="dm-upload-file" accept="image/*" data-role="ESTJ">
-            <button class="icon-btn dm-voice-btn" id="voice-btn-dm-ESTJ" data-role="ESTJ" title="按住说话" style="margin-right:8px;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;">🎙️</button>
+            <button class="icon-btn dm-voice-btn" id="voice-btn-dm-ESTJ" data-role="ESTJ" title="按住说话" style="margin-right:8px;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;"><svg class="ic" viewBox="0 0 24 24"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg></button>
             <div class="input-wrap"><input type="text" class="msg-input" id="msg-input-dm-ESTJ" placeholder="发消息给 李姐…" ></div>
-            <button class="send-btn" onclick="sendDM('ESTJ')">发送</button>
+            <button class="send-btn" onclick="sendDM('ESTJ')" title="发送"><svg class="ic" viewBox="0 0 24 24"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></svg></button>
         </div>
     </div>
 
@@ -1508,28 +1146,28 @@ body.light .voice-bubble:hover { background: rgba(0,0,0,0.09); }
             <div class="chat-header-right">
                 <div id="typing-bar-dm-ENFJ"></div>
                 
-                <button class="icon-btn" onclick="openModal()" title="调参设置">⚙</button>
-                <button id="hamburger" onclick="openSidebar()" title="菜单">☰</button>
+                <button class="icon-btn" onclick="openModal()" title="调参设置"><svg class="ic" viewBox="0 0 24 24"><line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/></svg></button>
+                <button id="hamburger" onclick="openSidebar()" title="菜单"><svg class="ic" viewBox="0 0 24 24"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg></button>
             </div>
         </div>
         <div class="chat-window" id="chat-window-dm-ENFJ">
             <div class="date-divider" id="date-label-dm-ENFJ-inner"></div>
         </div>
         <div class="input-area">
-            <label for="dm-upload-ENFJ" class="dm-upload-btn" title="发图片">📷</label>
+            <label for="dm-upload-ENFJ" class="dm-upload-btn" title="发图片"><svg class="ic" viewBox="0 0 24 24"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg></label>
             <input type="file" id="dm-upload-ENFJ" class="dm-upload-file" accept="image/*" data-role="ENFJ">
-            <button class="icon-btn dm-voice-btn" id="voice-btn-dm-ENFJ" data-role="ENFJ" title="按住说话" style="margin-right:8px;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;">🎙️</button>
+            <button class="icon-btn dm-voice-btn" id="voice-btn-dm-ENFJ" data-role="ENFJ" title="按住说话" style="margin-right:8px;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;"><svg class="ic" viewBox="0 0 24 24"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg></button>
             <div class="input-wrap">
                 <input type="text" class="msg-input" id="msg-input-dm-ENFJ" placeholder="发消息给 赵老师…" autocomplete="off">
             </div>
-            <button class="send-btn" onclick="sendDM('ENFJ')">发送</button>
+            <button class="send-btn" onclick="sendDM('ENFJ')" title="发送"><svg class="ic" viewBox="0 0 24 24"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></svg></button>
         </div>
     </div>
 
     <div class="panel" id="panel-moments">
         <div class="moments-header">
             <div class="moments-header-title">朋友圈</div>
-            <button class="icon-btn" onclick="generateMoments()" id="gen-moments-btn" title="强制刷新动态">↻</button>
+            <button class="icon-btn" onclick="generateMoments()" id="gen-moments-btn" title="强制刷新动态"><svg class="ic" viewBox="0 0 24 24"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg></button>
         </div>
 
         <div class="moments-scroll-area" id="moments-scroll-area">
@@ -1544,7 +1182,7 @@ body.light .voice-bubble:hover { background: rgba(0,0,0,0.09); }
 
             <div id="moments-list">
                 <div class="moments-empty">
-                    <div class="emoji">🌸</div>
+                    <div class="emoji"><svg class="ic" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></div>
                     <div>还没有动态，点击右上角刷新</div>
                 </div>
             </div>
@@ -1555,7 +1193,7 @@ body.light .voice-bubble:hover { background: rgba(0,0,0,0.09); }
   <div id="modal">
     <div id="modal-header">
         <div id="modal-title">调参面板</div>
-        <button id="modal-close" onclick="closeModal()">✕</button>
+        <button id="modal-close" onclick="closeModal()"><svg class="ic" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
     </div>
     <div id="modal-tabs">
         <div class="modal-tab tab-ENFP active" onclick="switchTab('ENFP')">ENFP</div>
@@ -1820,14 +1458,14 @@ function playNotificationSound() {
 /* ════════════════════════
    THEME & NAV
 ════════════════════════ */
-let isDark = true;
+let isDark = false;
 function toggleTheme() {
     isDark = !isDark;
-    document.body.classList.toggle('light', !isDark);
-    document.getElementById('theme-toggle').textContent = isDark ? '🌙' : '☀️';
+    document.body.classList.toggle('dark', isDark);
+    
     try { localStorage.setItem('theme', isDark ? 'dark' : 'light'); } catch(e) {}
 }
-try { if (localStorage.getItem('theme') === 'light') { isDark = false; document.body.classList.add('light'); document.getElementById('theme-toggle').textContent = '☀️'; } } catch(e) {}
+try { if (localStorage.getItem('theme') === 'dark') { isDark = true; document.body.classList.add('dark'); } } catch(e) {}
 
 /* ════════════════════════
    AUTH LAYER
@@ -1868,10 +1506,10 @@ function switchAuthTab(tab) {
     const tl = document.getElementById('auth-tab-login');
     const tr = document.getElementById('auth-tab-reg');
     const sb = document.getElementById('auth-submit');
-    tl.style.background = tab === 'login'    ? '#6c7fff' : 'transparent';
-    tl.style.color      = tab === 'login'    ? '#fff'    : '#8a8aac';
-    tr.style.background = tab === 'register' ? '#6c7fff' : 'transparent';
-    tr.style.color      = tab === 'register' ? '#fff'    : '#8a8aac';
+    tl.style.background = tab === 'login'    ? 'var(--accent)' : 'transparent';
+    tl.style.color      = tab === 'login'    ? '#fff'    : 'var(--text-muted)';
+    tr.style.background = tab === 'register' ? 'var(--accent)' : 'transparent';
+    tr.style.color      = tab === 'register' ? '#fff'    : 'var(--text-muted)';
     sb.textContent   = tab === 'login' ? '登录' : '注册';
     sb.dataset.tab   = tab;
     document.getElementById('auth-error').textContent = '';
@@ -2092,6 +1730,8 @@ function appendGroupBubble(role, content, isHistory = false, image = "", audio =
         // const dot = document.createElement('div'); dot.className = 'voice-dot';
 
         voiceBubble.appendChild(icon);
+        const wave = document.createElement('div'); wave.className = 'voice-wave';
+        voiceBubble.appendChild(wave);
         voiceBubble.appendChild(duration);
         // voiceBubble.appendChild(dot);
         
@@ -2268,6 +1908,8 @@ function appendDMBubble(chatRole, senderRole, content, isHistory = false, image 
         duration.textContent = '...';
         
         voiceBubble.appendChild(icon);
+        const wave = document.createElement('div'); wave.className = 'voice-wave';
+        voiceBubble.appendChild(wave);
         voiceBubble.appendChild(duration);
         
         // Convert to Text Button
@@ -2632,7 +2274,7 @@ function generateMoments() {
         .catch(err => console.error('朋友圈生成失败:', err));
 
     setTimeout(() => {
-        btn.innerHTML = '↻'; btn.disabled = false; generatingMoments = false;
+        btn.innerHTML = '<svg class="ic" viewBox="0 0 24 24"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>'; btn.disabled = false; generatingMoments = false;
     }, 30000);
 }
 
@@ -2684,7 +2326,7 @@ function submitComment(momentId) {
 function renderMoments() {
     const list = document.getElementById('moments-list');
     if (!momentsData.length) {
-        list.innerHTML = `<div class="moments-empty"><div class="emoji">🌸</div><div>还没有动态，点击右上角刷新</div></div>`;
+        list.innerHTML = `<div class="moments-empty"><div class="emoji"><svg class="ic" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></div><div>还没有动态，点击右上角刷新</div></div>`;
         return;
     }
     list.innerHTML = '';
@@ -3215,55 +2857,54 @@ document.querySelectorAll('.dm-upload-file').forEach(input => {
 <!-- ══ 登录弹窗 ══════════════════════════════════════════ -->
 <div id="auth-modal" style="
   display:none; position:fixed; inset:0; z-index:9999;
-  background:rgba(0,0,0,0.75); backdrop-filter:blur(12px);
+  background:rgba(0,0,0,0.4); backdrop-filter:blur(8px); -webkit-backdrop-filter:blur(8px);
   align-items:center; justify-content:center;
 ">
   <div style="
-    width:340px; background:#13162a; border:1px solid rgba(255,255,255,0.1);
-    border-radius:20px; padding:36px 32px; box-shadow:0 32px 80px rgba(0,0,0,0.6);
+    width:340px; background:var(--surface); border:1px solid var(--border);
+    border-radius:18px; padding:34px 30px; box-shadow:0 24px 70px rgba(0,0,0,0.28);
     position:relative; overflow:hidden;
   ">
-    <!-- 顶部彩条 -->
-    <div style="position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,#ff8c42,#c97ef5,#5bc8f5);"></div>
-
     <div style="text-align:center;margin-bottom:24px">
-      <div style="font-size:36px;margin-bottom:10px">🏥</div>
-      <div style="font-size:18px;font-weight:700;color:#e8e9f5;font-family:'Noto Serif SC',serif">MBTI 精神病院</div>
-      <div style="font-size:12px;color:#8a8aac;margin-top:4px">你的专属朋友圈模拟器</div>
+      <div style="width:52px;height:52px;border-radius:15px;background:var(--accent);display:flex;align-items:center;justify-content:center;margin:0 auto 14px">
+        <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
+      </div>
+      <div style="font-size:19px;font-weight:650;color:var(--text);letter-spacing:-0.01em">MBTI 群聊实验室</div>
+      <div style="font-size:13px;color:var(--text-muted);margin-top:4px">你的专属朋友圈模拟器</div>
     </div>
 
     <!-- Tab -->
-    <div style="display:flex;gap:6px;margin-bottom:20px;background:rgba(255,255,255,0.05);border-radius:10px;padding:4px">
+    <div style="display:flex;gap:4px;margin-bottom:18px;background:var(--bg2);border-radius:11px;padding:4px">
       <button id="auth-tab-login" onclick="switchAuthTab('login')" style="
-        flex:1;padding:8px;border:none;border-radius:8px;cursor:pointer;font-size:13px;
-        font-weight:600;font-family:inherit;transition:all 0.2s;
-        background:#6c7fff;color:#fff;
+        flex:1;padding:9px;border:none;border-radius:8px;cursor:pointer;font-size:13.5px;
+        font-weight:600;font-family:inherit;transition:all 0.18s;
+        background:var(--accent);color:#fff;
       ">登录</button>
       <button id="auth-tab-reg" onclick="switchAuthTab('register')" style="
-        flex:1;padding:8px;border:none;border-radius:8px;cursor:pointer;font-size:13px;
-        font-weight:600;font-family:inherit;transition:all 0.2s;
-        background:transparent;color:#8a8aac;
+        flex:1;padding:9px;border:none;border-radius:8px;cursor:pointer;font-size:13.5px;
+        font-weight:600;font-family:inherit;transition:all 0.18s;
+        background:transparent;color:var(--text-muted);
       ">注册</button>
     </div>
 
     <div style="display:flex;flex-direction:column;gap:10px">
       <input id="auth-username" type="text" placeholder="用户名" maxlength="20" style="
-        padding:11px 14px;border:1.5px solid rgba(255,255,255,0.1);border-radius:9px;
-        background:rgba(255,255,255,0.05);color:#e8e9f5;font-size:13.5px;
-        font-family:inherit;outline:none;transition:border-color 0.2s;
-      " onfocus="this.style.borderColor='#6c7fff'" onblur="this.style.borderColor='rgba(255,255,255,0.1)'">
+        padding:12px 14px;border:1px solid var(--border2);border-radius:10px;
+        background:var(--bg2);color:var(--text);font-size:14px;
+        font-family:inherit;outline:none;transition:border-color 0.18s;
+      " onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border2)'">
       <input id="auth-password" type="password" placeholder="密码（至少 6 位）" style="
-        padding:11px 14px;border:1.5px solid rgba(255,255,255,0.1);border-radius:9px;
-        background:rgba(255,255,255,0.05);color:#e8e9f5;font-size:13.5px;
-        font-family:inherit;outline:none;transition:border-color 0.2s;
-      " onfocus="this.style.borderColor='#6c7fff'" onblur="this.style.borderColor='rgba(255,255,255,0.1)'"
+        padding:12px 14px;border:1px solid var(--border2);border-radius:10px;
+        background:var(--bg2);color:var(--text);font-size:14px;
+        font-family:inherit;outline:none;transition:border-color 0.18s;
+      " onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border2)'"
         onkeydown="if(event.key==='Enter') submitAuth(document.getElementById('auth-submit').dataset.tab)">
-      <div id="auth-error" style="color:#fb7185;font-size:12px;min-height:16px;text-align:center;font-weight:500"></div>
+      <div id="auth-error" style="color:#ff3b30;font-size:12.5px;min-height:16px;text-align:center;font-weight:500"></div>
       <button id="auth-submit" data-tab="login" onclick="submitAuth(this.dataset.tab)" style="
-        padding:12px;background:#6c7fff;color:#fff;border:none;border-radius:9px;
-        font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;
-        transition:all 0.18s;box-shadow:0 3px 12px rgba(108,127,255,0.35);
-      " onmouseover="this.style.opacity=0.85" onmouseout="this.style.opacity=1">登录</button>
+        padding:12px;background:var(--accent);color:#fff;border:none;border-radius:10px;
+        font-size:14.5px;font-weight:600;cursor:pointer;font-family:inherit;
+        transition:filter 0.16s;
+      " onmouseover="this.style.filter='brightness(1.08)'" onmouseout="this.style.filter='none'">登录</button>
     </div>
   </div>
 </div>
