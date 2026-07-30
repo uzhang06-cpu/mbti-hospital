@@ -747,8 +747,16 @@ def generate_image_url(prompt):
 
 
 def extract_image(text):
+    # 首选：模型规范输出 [IMG: 画面描述]
     match = re.search(r'\[IMG:\s*(.*?)\]', text, re.DOTALL)
     if match: return match.group(1).strip(), text.replace(match.group(0), "").strip()
+    # 兜底：模型不听话，把配图写成【…】/(…)/[…]旁白，且内容明显在描述一张图
+    for pat in (r'【([^】]*?(?:图|照片|自拍|拍了|拍张|画面|镜头|表情包)[^】]*?)】',
+                r'\[([^\]]*?(?:图|照片|自拍|拍了|拍张|画面|镜头|表情包)[^\]]*?)\]',
+                r'（([^）]*?(?:自拍|照片|拍了|画面|镜头)[^）]*?)）'):
+        m = re.search(pat, text)
+        if m:
+            return m.group(1).strip(), text.replace(m.group(0), "").strip()
     return None, text
 
 
@@ -1045,7 +1053,7 @@ def trigger_ai_reply(role, trigger_role, trigger_content, user_id, room, is_star
 
         # 强制发图：用户要求发图但AI没输出[IMG:]时，用回复内容搜图
         if not img_url and trigger_role == "INFJ" and trigger_content:
-            img_keywords = ["发图", "发图片", "发张图", "照片", "图片", "图看看"]
+            img_keywords = ["发图", "发图片", "发张图", "照片", "图片", "图看看", "发出来", "发我", "发来", "来张", "自拍", "拍张"]
             if any(k in (trigger_content or "") for k in img_keywords):
                 print(f"[DEBUG] Force image search for {role}", flush=True)
                 img_url = search_image_url(merged[:60], role)
@@ -1144,7 +1152,7 @@ def trigger_dm_reply(role, user_content, user_id, room):
 
         # 强制发图：用户要求发图但AI没输出[IMG:]时，用回复内容搜图
         if not img_url and user_content:
-            img_keywords = ["发图", "发图片", "发张图", "照片", "图片", "图看看"]
+            img_keywords = ["发图", "发图片", "发张图", "照片", "图片", "图看看", "发出来", "发我", "发来", "来张", "自拍", "拍张"]
             if any(k in (user_content or "") for k in img_keywords):
                 print(f"[DEBUG] DM force image search for {role}", flush=True)
                 img_url = search_image_url(merged[:60], role)
