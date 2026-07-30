@@ -190,12 +190,12 @@ GROUP_BACKGROUND = (
 CUSTOM_CONFIG = {
     # trigger_prob 控制用户发消息时各角色响应概率，期望总人数约 2.2 人（真实群聊感）
     # group_interval 缩短：让主动破冰更活跃，不要让用户等 10 分钟
-    "ENFP": {"temperature": 0.9, "max_tokens": 60, "trigger_prob": 0.85, "prompt_extra": "", "proactive_dm": 0.65, "group_interval": (15, 60)},
-    "INFP": {"temperature": 0.9, "max_tokens": 60, "trigger_prob": 0.60, "prompt_extra": "", "proactive_dm": 0.50, "group_interval": (30, 100)},
-    "ENTP": {"temperature": 0.95, "max_tokens": 60, "trigger_prob": 0.80, "prompt_extra": "", "proactive_dm": 0.60, "group_interval": (20, 80)},
-    "ENTJ": {"temperature": 0.85, "max_tokens": 50, "trigger_prob": 0.60, "prompt_extra": "", "proactive_dm": 0.50, "group_interval": (40, 120)},
-    "ESTJ": {"temperature": 0.85, "max_tokens": 50, "trigger_prob": 0.55, "prompt_extra": "", "proactive_dm": 0.40, "group_interval": (50, 150)},
-    "ENFJ": {"temperature": 0.9, "max_tokens": 60, "trigger_prob": 0.75, "prompt_extra": "", "proactive_dm": 0.70, "group_interval": (25, 90)},
+    "ENFP": {"temperature": 0.9, "max_tokens": 140, "trigger_prob": 0.85, "prompt_extra": "", "proactive_dm": 0.65, "group_interval": (15, 60)},
+    "INFP": {"temperature": 0.9, "max_tokens": 140, "trigger_prob": 0.60, "prompt_extra": "", "proactive_dm": 0.50, "group_interval": (30, 100)},
+    "ENTP": {"temperature": 0.95, "max_tokens": 140, "trigger_prob": 0.80, "prompt_extra": "", "proactive_dm": 0.60, "group_interval": (20, 80)},
+    "ENTJ": {"temperature": 0.85, "max_tokens": 140, "trigger_prob": 0.60, "prompt_extra": "", "proactive_dm": 0.50, "group_interval": (40, 120)},
+    "ESTJ": {"temperature": 0.85, "max_tokens": 140, "trigger_prob": 0.55, "prompt_extra": "", "proactive_dm": 0.40, "group_interval": (50, 150)},
+    "ENFJ": {"temperature": 0.9, "max_tokens": 140, "trigger_prob": 0.75, "prompt_extra": "", "proactive_dm": 0.70, "group_interval": (25, 90)},
     "global": {
         "share_prob": 0.35,
         "drift_prob": 0.25,
@@ -203,7 +203,7 @@ CUSTOM_CONFIG = {
         "censor_entp": True,
         "proactive_min": 8,
         "proactive_max": 25,
-        "max_tokens": 50,  # Global short message control
+        "max_tokens": 140,  # Global short message control（够说完一句，避免中途硬截断）
     }
 }
 
