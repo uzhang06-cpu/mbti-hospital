@@ -554,7 +554,7 @@ FORMAT_RULES = (
     "5. 不要用括号写动作或状态，比如（正在吃饭）（刚下班），真人不这么说话。\n"
     "6. 不用非得接住对方每一句，可以只挑感兴趣的点回、可以顺势聊自己的事、偶尔懒得搭理只丢一句也正常。\n"
     "7. 别跟上一条撞开场白、撞表情、撞反应，每个人有自己的说话习惯和切入点。\n"
-    "8. [IMG]指令：如果用户要求发图或发朋友圈，在文末输出：[IMG: 画面描述]（不需要则不写）。\n"
+    "8. [IMG]指令：如果用户要求发图或发朋友圈，先正常说一两句话，再在最后单独一行输出：[IMG: 简短画面描述]。描述控制在15字以内、必须带右括号 ]，别写成长句，别把描述当聊天内容念出来。\n"
     "9. [VOICE]指令：如果这句话适合用语音发（很激动、很懒、想撒娇），在文末输出 [VOICE]（不需要则不写）。"
 )
 
@@ -747,9 +747,12 @@ def generate_image_url(prompt):
 
 
 def extract_image(text):
-    # 首选：模型规范输出 [IMG: 画面描述]
+    # 首选：模型规范输出 [IMG: 画面描述]（闭合）
     match = re.search(r'\[IMG:\s*(.*?)\]', text, re.DOTALL)
     if match: return match.group(1).strip(), text.replace(match.group(0), "").strip()
+    # 截断：[IMG: 描述… 被 max_tokens 砍掉了右括号，把 [IMG: 到结尾整段切掉
+    m = re.search(r'\[IMG:\s*(.*)$', text, re.DOTALL)
+    if m: return m.group(1).strip(), text[:m.start()].strip()
     # 兜底：模型不听话，把配图写成【…】/(…)/[…]旁白，且内容明显在描述一张图
     for pat in (r'【([^】]*?(?:图|照片|自拍|拍了|拍张|画面|镜头|表情包)[^】]*?)】',
                 r'\[([^\]]*?(?:图|照片|自拍|拍了|拍张|画面|镜头|表情包)[^\]]*?)\]',
@@ -1058,6 +1061,11 @@ def trigger_ai_reply(role, trigger_role, trigger_content, user_id, room, is_star
                 print(f"[DEBUG] Force image search for {role}", flush=True)
                 img_url = search_image_url(merged[:60], role)
 
+        # 安全网：只出了图却没有任何文字时，补一句自然短语，避免"只发图不说话"
+        if img_url and not bubbles:
+            merged = random.choice(["喏", "看这个", "刚拍的", "呐", "给你看", "瞅瞅"])
+            bubbles = [merged]
+
         if not bubbles and not img_url: return
 
         # 1. Detect Audio Intent（精确匹配，避免"语气"等词误触发）
@@ -1156,6 +1164,11 @@ def trigger_dm_reply(role, user_content, user_id, room):
             if any(k in (user_content or "") for k in img_keywords):
                 print(f"[DEBUG] DM force image search for {role}", flush=True)
                 img_url = search_image_url(merged[:60], role)
+
+        # 安全网：只出了图却没有任何文字时，补一句自然短语，避免"只发图不说话"
+        if img_url and not bubbles:
+            merged = random.choice(["喏", "看这个", "刚拍的", "呐", "给你看", "瞅瞅"])
+            bubbles = [merged]
 
         if not bubbles and not img_url: return
 
