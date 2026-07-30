@@ -612,6 +612,62 @@ body.dark .moment-card:hover { box-shadow: 0 6px 24px rgba(0,0,0,0.4); }
     background: var(--surface2);
 }
 
+/* ── Moment image grid (九宫格) ── */
+.moment-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; margin-top: 10px; max-width: 384px; }
+.moment-grid img { width: 100%; aspect-ratio: 1 / 1; object-fit: cover; border-radius: 8px; cursor: zoom-in; background: var(--surface2); border: 1px solid var(--border); }
+.moment-grid.n1 { grid-template-columns: 1fr; max-width: 240px; }
+.moment-grid.n1 img { aspect-ratio: auto; max-height: 340px; }
+.moment-grid.n2 { grid-template-columns: repeat(2, 1fr); max-width: 260px; }
+.moment-grid.n4 { grid-template-columns: repeat(2, 1fr); max-width: 260px; }
+
+/* ── Compose moment modal ── */
+#compose-overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.4);
+    backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+    z-index: 120; display: flex; align-items: center; justify-content: center;
+    opacity: 0; pointer-events: none; transition: opacity 0.2s;
+}
+#compose-overlay.open { opacity: 1; pointer-events: all; }
+#compose-card {
+    width: 460px; max-width: calc(100vw - 32px); max-height: 88vh;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 18px; box-shadow: 0 24px 70px rgba(0,0,0,0.28);
+    display: flex; flex-direction: column; overflow: hidden;
+    transform: translateY(14px) scale(0.98); transition: transform 0.22s cubic-bezier(0.22,0.61,0.36,1);
+}
+#compose-overlay.open #compose-card { transform: translateY(0) scale(1); }
+.compose-head { display: flex; align-items: center; justify-content: space-between; padding: 16px 18px; border-bottom: 1px solid var(--border); }
+.compose-head .t { font-size: 16px; font-weight: 650; color: var(--text); }
+.compose-body { padding: 16px 18px; overflow-y: auto; }
+#compose-text {
+    width: 100%; min-height: 84px; border: none; outline: none; resize: vertical;
+    background: transparent; color: var(--text); font-family: inherit; font-size: 15px; line-height: 1.5;
+}
+#compose-text::placeholder { color: var(--text-muted); }
+.compose-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 14px; }
+.compose-thumb { position: relative; aspect-ratio: 1 / 1; border-radius: 10px; overflow: hidden; background: var(--surface2); border: 1px solid var(--border); }
+.compose-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.compose-thumb .rm {
+    position: absolute; top: 4px; right: 4px; width: 20px; height: 20px; border-radius: 50%;
+    background: rgba(0,0,0,0.55); color: #fff; border: none; cursor: pointer;
+    display: flex; align-items: center; justify-content: center; font-size: 13px; line-height: 1;
+}
+.compose-add {
+    aspect-ratio: 1 / 1; border: 1.5px dashed var(--border2); border-radius: 10px;
+    background: transparent; color: var(--text-muted); cursor: pointer;
+    display: flex; align-items: center; justify-content: center; transition: border-color 0.15s, color 0.15s;
+}
+.compose-add:hover { border-color: var(--accent); color: var(--accent); }
+.compose-add svg { width: 26px; height: 26px; fill: none; stroke: currentColor; stroke-width: 1.6; }
+.compose-foot { display: flex; align-items: center; justify-content: space-between; padding: 14px 18px; border-top: 1px solid var(--border); }
+.compose-count { font-size: 12px; color: var(--text-muted); }
+.compose-actions { display: flex; gap: 10px; }
+#compose-cancel { background: transparent; color: var(--text-sub); border: 1px solid var(--border2); border-radius: 10px; padding: 9px 16px; font-family: inherit; font-size: 13.5px; cursor: pointer; }
+#compose-cancel:hover { background: rgba(120,120,130,0.1); }
+#compose-publish { background: var(--accent); color: #fff; border: none; border-radius: 10px; padding: 9px 22px; font-family: inherit; font-size: 14px; font-weight: 600; cursor: pointer; transition: background 0.14s; }
+#compose-publish:hover { background: var(--accent-press); }
+#compose-publish:disabled { opacity: 0.5; cursor: default; }
+
 .moment-actions { display: flex; align-items: center; gap: 8px; padding-top: 12px; border-top: 1px solid var(--border); }
 .action-btn {
     display: flex; align-items: center; gap: 6px;
@@ -1170,7 +1226,10 @@ input[type=range]::-webkit-slider-thumb:hover { transform: scale(1.1); }
     <div class="panel" id="panel-moments">
         <div class="moments-header">
             <div class="moments-header-title">朋友圈</div>
-            <button class="icon-btn" onclick="generateMoments()" id="gen-moments-btn" title="强制刷新动态"><svg class="ic" viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-2.64-6.36"/><polyline points="21 3 21 9 15 9"/></svg></button>
+            <div style="display:flex;align-items:center;gap:2px">
+                <button class="icon-btn" onclick="openCompose()" title="发朋友圈"><svg class="ic" viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg></button>
+                <button class="icon-btn" onclick="generateMoments()" id="gen-moments-btn" title="强制刷新动态"><svg class="ic" viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-2.64-6.36"/><polyline points="21 3 21 9 15 9"/></svg></button>
+            </div>
         </div>
 
         <div class="moments-scroll-area" id="moments-scroll-area">
@@ -2289,6 +2348,68 @@ function generateMoments() {
     }, 30000);
 }
 
+/* ── 发朋友圈（多图，最多 9 张）── */
+let composeFiles = [];
+function openCompose() {
+    composeFiles = [];
+    const t = document.getElementById('compose-text'); if (t) t.value = '';
+    renderComposeGrid();
+    document.getElementById('compose-overlay').classList.add('open');
+    setTimeout(() => { const el = document.getElementById('compose-text'); if (el) el.focus(); }, 60);
+}
+function closeCompose() {
+    document.getElementById('compose-overlay').classList.remove('open');
+    composeFiles = [];
+}
+function onComposeFiles(e) {
+    const files = Array.from(e.target.files || []);
+    for (const f of files) { if (composeFiles.length >= 9) break; composeFiles.push(f); }
+    e.target.value = '';
+    renderComposeGrid();
+}
+function renderComposeGrid() {
+    const grid = document.getElementById('compose-grid');
+    if (!grid) return;
+    grid.innerHTML = '';
+    composeFiles.forEach((f, i) => {
+        const cell = document.createElement('div'); cell.className = 'compose-thumb';
+        const img = document.createElement('img'); img.src = URL.createObjectURL(f); cell.appendChild(img);
+        const rm = document.createElement('button'); rm.className = 'rm'; rm.textContent = '×';
+        rm.onclick = () => { composeFiles.splice(i, 1); renderComposeGrid(); };
+        cell.appendChild(rm);
+        grid.appendChild(cell);
+    });
+    if (composeFiles.length < 9) {
+        const add = document.createElement('button'); add.className = 'compose-add';
+        add.innerHTML = '<svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>';
+        add.onclick = () => document.getElementById('compose-files').click();
+        grid.appendChild(add);
+    }
+    const cnt = document.getElementById('compose-count'); if (cnt) cnt.textContent = composeFiles.length + '/9';
+}
+function publishMoment() {
+    const text = (document.getElementById('compose-text').value || '').trim();
+    if (!text && !composeFiles.length) { alert('写点什么或加张图吧'); return; }
+    const btn = document.getElementById('compose-publish');
+    btn.disabled = true; btn.textContent = '发布中…';
+    const fd = new FormData();
+    fd.append('content', text);
+    composeFiles.forEach(f => fd.append('images', f));
+    authFetch('/api/moments/create', { method: 'POST', body: fd })
+        .then(r => r.json())
+        .then(data => {
+            btn.disabled = false; btn.textContent = '发布';
+            if (data.ok && data.moment) {
+                momentsData.unshift(data.moment);
+                renderMoments();
+                closeCompose();
+            } else {
+                alert(data.error || '发布失败');
+            }
+        })
+        .catch(err => { btn.disabled = false; btn.textContent = '发布'; alert('网络错误，发布失败'); console.error(err); });
+}
+
 function toggleLike(momentId) {
     const card = document.querySelector(`[data-moment-id="${momentId}"]`);
     if (!card) return;
@@ -2353,6 +2474,11 @@ function renderMoments() {
         ).join('');
         const hasComments = comments.length > 0;
 
+        const imgs = (m.images && m.images.length) ? m.images : (m.image ? [m.image] : []);
+        const gridHtml = imgs.length
+            ? `<div class="moment-grid n${Math.min(imgs.length, 9)}">${imgs.slice(0, 9).map(u => `<img src="${u}" loading="lazy" onclick="window.open('${u}','_blank')">`).join('')}</div>`
+            : '';
+
         card.innerHTML = `
             <div class="moment-header">
                 <div class="moment-avatar ${m.role}">${AVATARS[m.role] || ''}</div>
@@ -2366,7 +2492,7 @@ function renderMoments() {
                     <audio src="${m.audio}" style="display:none"></audio>
                 </div>
             ` : ''}
-            ${m.image ? `<img src="${m.image}" class="moment-image" onclick="window.open(this.src, '_blank')">` : ''}
+            ${gridHtml}
             <div class="moment-actions">
                 <button class="action-btn ${m.liked_by_user ? 'liked' : ''} like-btn" onclick="toggleLike('${m.id}')">
                     <span class="icon">${m.liked_by_user ? '❤️' : '🤍'}</span>
@@ -2864,6 +2990,28 @@ document.querySelectorAll('.dm-upload-file').forEach(input => {
         });
     });
 </script>
+
+<!-- ══ 发朋友圈 弹窗 ══════════════════════════════════════ -->
+<div id="compose-overlay" onclick="if(event.target===this) closeCompose()">
+  <div id="compose-card">
+    <div class="compose-head">
+      <div class="t">发朋友圈</div>
+      <button class="icon-btn" onclick="closeCompose()" title="关闭"><svg class="ic" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    </div>
+    <div class="compose-body">
+      <textarea id="compose-text" placeholder="这一刻的想法…"></textarea>
+      <div class="compose-grid" id="compose-grid"></div>
+      <input type="file" id="compose-files" accept="image/*" multiple style="display:none" onchange="onComposeFiles(event)">
+    </div>
+    <div class="compose-foot">
+      <span class="compose-count" id="compose-count">0/9</span>
+      <div class="compose-actions">
+        <button id="compose-cancel" onclick="closeCompose()">取消</button>
+        <button id="compose-publish" onclick="publishMoment()">发布</button>
+      </div>
+    </div>
+  </div>
+</div>
 
 <!-- ══ 登录弹窗 ══════════════════════════════════════════ -->
 <div id="auth-modal" style="

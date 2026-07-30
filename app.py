@@ -1292,7 +1292,9 @@ def get_moments():
         comments = list(db["comments"].find({"user_id": uid, "moment_id": mid}, sort=[("created_at", 1)]))
         result.append({
             "id": mid, "role": m["role"], "content": m.get("content",""),
-            "image": m.get("image",""), "audio": m.get("audio",""),
+            "image": m.get("image",""),
+            "images": m.get("images") or ([m["image"]] if m.get("image") else []),
+            "audio": m.get("audio",""),
             "created_at": str(m.get("created_at","")),
             "likes": [x for x in (m.get("likes") or "").split(",") if x],
             "liked_by_user": "我" in (m.get("likes") or ""),
@@ -1352,6 +1354,70 @@ def generate_moments():
     for role in roles:
         socketio.start_background_task(create_single_moment, role, uid, room)
     return jsonify({"ok": True, "generating": len(roles)})
+
+
+@app.route("/api/moments/create", methods=["POST"])
+def create_moment():
+    """用户（我）发朋友圈：文字 + 最多 9 张本地上传图片。"""
+    user = _require_auth()
+    if not user: return jsonify({"error": "未登录"}), 401
+    uid  = user["user_id"]
+    room = uid
+    content = (request.form.get("content") or "").strip()
+    files = request.files.getlist("images")[:9]
+
+    from eventlet import tpool
+    urls = []
+    upload_dir = os.path.join("static", "uploads")
+    os.makedirs(upload_dir, exist_ok=True)
+    for f in files:
+        if not f or not f.filename:
+            continue
+        safe = re.sub(r'[^\w\.\-]', '', f.filename) or "img"
+        fn = f"moment_{uuid.uuid4()}_{safe}"
+        tpool.execute(f.save, os.path.join(upload_dir, fn))
+        urls.append(f"/static/uploads/{fn}")
+
+    if not content and not urls:
+        return jsonify({"ok": False, "error": "内容和图片不能都为空"}), 400
+
+    now = datetime.utcnow()
+    db  = get_mdb()
+    doc = {"user_id": uid, "role": "INFJ", "content": content,
+           "image": urls[0] if urls else "", "images": urls, "audio": "",
+           "likes": "", "created_at": now}
+    res = db["moments"].insert_one(doc)
+    mid = str(res.inserted_id)
+
+    # 让 1~2 个角色来评论我的动态，热闹一点
+    reactors = random.sample(["ENFP", "INFP", "ENTP", "ENTJ", "ESTJ", "ENFJ"], k=random.randint(1, 2))
+    for r in reactors:
+        socketio.start_background_task(trigger_moment_reaction, r, mid, content, uid, room)
+
+    return jsonify({"ok": True, "moment": {
+        "id": mid, "role": "INFJ", "content": content, "image": doc["image"],
+        "images": urls, "audio": "", "created_at": str(now),
+        "likes": [], "liked_by_user": False, "comments": []
+    }})
+
+
+def trigger_moment_reaction(role, moment_id, user_content, user_id, room):
+    """角色对『我』刚发的朋友圈评论一句。"""
+    socketio.sleep(random.uniform(2.0, 6.0))
+    try:
+        prompt = (f"{PERSONA_BASE[role]}\n『我』（用户）刚在朋友圈发了一条动态：「{user_content or '（配图，无文字）'}」\n"
+                  f"请以朋友的口吻评论一句。规则：1.不要带引号。2.简短自然、别太长。3.符合人设。")
+        reply = clean_raw(role, call_llm(role, messages=[{"role": "user", "content": prompt}],
+                                         max_tokens=40, temperature=0.85))
+        if reply:
+            db = get_mdb()
+            cid, now = str(uuid.uuid4()), datetime.utcnow()
+            db["comments"].insert_one({"id": cid, "moment_id": moment_id, "role": role,
+                                       "content": reply, "created_at": now, "user_id": user_id})
+            socketio.emit("new_comment", {"id": cid, "moment_id": moment_id, "role": role,
+                                          "content": reply, "created_at": str(now)}, room=room)
+    except Exception:
+        pass
 
 
 @app.route("/api/moments/like", methods=["POST"])
