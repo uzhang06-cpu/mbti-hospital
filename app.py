@@ -691,32 +691,47 @@ def _save_remote_image(url: str) -> str:
 
 def search_image_url(img_desc: str, role: str) -> str:
     """
-    图片搜索主入口（替代原 AI 生图）
-    - 按角色性格概率决定搜表情包还是真实图片
-    - 表情包：斗图啦（角色偏好词，随机）
-    - 真实图片：Bing 中文图片（用 img_desc 搜索）
-    - 两层兜底，任一成功即返回本地路径
+    生图主入口：调用硅基流动 Kolors 文生图，下载到本地 static/uploads 返回本地路径。
+    （原 Bing / 斗图啦 爬虫图源已失效，改为真·AI 生图）
     """
     from eventlet import tpool
 
-    use_meme = random.random() < ROLE_MEME_PROB.get(role, 0.35)
+    if not SILICONFLOW_API_KEY or not img_desc:
+        return ""
 
-    if use_meme:
-        kw = random.choice(ROLE_MEME_KEYWORDS.get(role, ["表情包"]))
-        raw_url = tpool.execute(_scrape_doutula, kw)
-        if raw_url:
-            local = tpool.execute(_save_remote_image, raw_url)
-            if local:
-                return local
+    def _gen():
+        try:
+            resp = requests.post(
+                "https://api.siliconflow.cn/v1/images/generations",
+                headers={
+                    "Authorization": f"Bearer {SILICONFLOW_API_KEY}",
+                    "Content-Type": "application/json",
+                },
+                json={
+                    "model": "Kwai-Kolors/Kolors",
+                    "prompt": img_desc[:300],
+                    "image_size": "1024x1024",
+                    "batch_size": 1,
+                    "num_inference_steps": 20,
+                },
+                timeout=60,
+            )
+            if resp.status_code != 200:
+                print(f"[Kolors] HTTP {resp.status_code}: {resp.text[:200]}", flush=True)
+                return ""
+            data = resp.json()
+            imgs = data.get("images") or data.get("data") or []
+            url = imgs[0].get("url") if imgs else ""
+            print(f"[Kolors] '{img_desc[:30]}' → {'ok' if url else '空'}", flush=True)
+            return url or ""
+        except Exception as e:
+            print(f"[Kolors] 异常: {e}", flush=True)
+            return ""
 
-    # 用 img_desc 搜 Bing 真实图片
-    raw_url = tpool.execute(_scrape_bing, img_desc[:40])
-    if raw_url:
-        local = tpool.execute(_save_remote_image, raw_url)
-        if local:
-            return local
-
-    return ""
+    remote_url = tpool.execute(_gen)
+    if not remote_url:
+        return ""
+    return tpool.execute(_save_remote_image, remote_url)
 
 
 # 保留别名，兼容旧调用（逐步替换）
