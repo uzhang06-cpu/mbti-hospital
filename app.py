@@ -190,13 +190,13 @@ GROUP_BACKGROUND = (
 
 CUSTOM_CONFIG = {
     # trigger_prob 控制用户发消息时各角色响应概率，期望总人数约 2.2 人（真实群聊感）
-    # group_interval 缩短：让主动破冰更活跃，不要让用户等 10 分钟
-    "ENFP": {"temperature": 0.9, "max_tokens": 140, "trigger_prob": 0.85, "proactive_dm": 0.65, "group_interval": (180, 480)},
-    "INFP": {"temperature": 0.9, "max_tokens": 140, "trigger_prob": 0.60, "proactive_dm": 0.50, "group_interval": (300, 660)},
-    "ENTP": {"temperature": 0.95, "max_tokens": 140, "trigger_prob": 0.80, "proactive_dm": 0.60, "group_interval": (210, 540)},
-    "ENTJ": {"temperature": 0.85, "max_tokens": 140, "trigger_prob": 0.60, "proactive_dm": 0.50, "group_interval": (360, 780)},
-    "ESTJ": {"temperature": 0.85, "max_tokens": 140, "trigger_prob": 0.55, "proactive_dm": 0.40, "group_interval": (420, 900)},
-    "ENFJ": {"temperature": 0.9, "max_tokens": 140, "trigger_prob": 0.75, "proactive_dm": 0.70, "group_interval": (240, 600)},
+    # group_interval：群沉默超过这个秒数才可能有人主动冒泡（30-180分钟，仿真人群、不刷屏）；外向的短、慢热的长
+    "ENFP": {"temperature": 0.9, "max_tokens": 140, "trigger_prob": 0.85, "proactive_dm": 0.65, "group_interval": (1800, 5400)},
+    "INFP": {"temperature": 0.9, "max_tokens": 140, "trigger_prob": 0.60, "proactive_dm": 0.50, "group_interval": (4800, 10800)},
+    "ENTP": {"temperature": 0.95, "max_tokens": 140, "trigger_prob": 0.80, "proactive_dm": 0.60, "group_interval": (2100, 5400)},
+    "ENTJ": {"temperature": 0.85, "max_tokens": 140, "trigger_prob": 0.60, "proactive_dm": 0.50, "group_interval": (3600, 9000)},
+    "ESTJ": {"temperature": 0.85, "max_tokens": 140, "trigger_prob": 0.55, "proactive_dm": 0.40, "group_interval": (4200, 10800)},
+    "ENFJ": {"temperature": 0.9, "max_tokens": 140, "trigger_prob": 0.75, "proactive_dm": 0.70, "group_interval": (2400, 6000)},
     "global": {
         "share_prob": 0.35,
         "drift_prob": 0.25,
