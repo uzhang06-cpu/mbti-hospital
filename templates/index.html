@@ -1911,6 +1911,13 @@ function openGroupCreate(){
             <div class="friend-ava" style="width:34px;height:34px;font-size:14px;background:${frColor(f.name)}">${(f.name||'?').slice(0,1).toUpperCase()}</div>
             <span class="fr-name">${escapeHtml(f.name)}</span>
         </label>`).join('') : '<div class="fr-last">先加几个好友才能建群哦</div>';
+    const AIS=[['ENFP','暖暖'],['INFP','小沈'],['ENTP','阿程'],['ENTJ','思睿'],['ESTJ','知行'],['ENFJ','沐阳']];
+    document.getElementById('group-ai-pick').innerHTML = AIS.map(([r,n])=>
+        `<label style="display:flex;align-items:center;gap:10px;padding:8px 4px;cursor:pointer">
+            <input type="checkbox" class="gai" value="${r}" style="width:18px;height:18px">
+            <div class="moment-avatar ${r}" style="width:34px;height:34px">${AVATARS[r]||''}</div>
+            <span class="fr-name">${n}</span>
+        </label>`).join('');
     document.getElementById('group-name-input').value='';
     document.getElementById('group-modal').style.display='flex';
 }
@@ -1918,8 +1925,9 @@ function closeGroupCreate(){ document.getElementById('group-modal').style.displa
 function createGroup(){
     const name=(document.getElementById('group-name-input').value||'').trim();
     const uids=Array.from(document.querySelectorAll('#group-member-pick input:checked')).map(c=>c.value);
-    if(!uids.length){ alert('至少选一个好友入群'); return; }
-    authFetch('/api/groups/create',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:name||'新群聊',member_uids:uids})})
+    const ai=Array.from(document.querySelectorAll('#group-ai-pick input:checked')).map(c=>c.value);
+    if(!uids.length && !ai.length){ alert('至少选一个好友或 AI 入群'); return; }
+    authFetch('/api/groups/create',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:name||'新群聊',member_uids:uids,ai_members:ai})})
       .then(r=>r.json()).then(d=>{ if(d&&d.ok){ closeGroupCreate(); loadGroups(); openGroupChat(d.id,d.name); } else alert((d&&d.error)||'建群失败'); })
       .catch(()=>alert('网络错误'));
 }
@@ -1931,15 +1939,16 @@ function openGroupChat(gid,nameOpt){
     const win=document.getElementById('gc-window'); win.innerHTML='';
     switchPanel('group-chat'); document.getElementById('nav-friends')?.classList.add('active');
     authFetch('/api/groups/'+gid+'/history').then(r=>r.json()).then(d=>{
-        ((d&&d.messages)||[]).forEach(m=>appendGCBubble(m.mine,m.from_name,m.content));
+        ((d&&d.messages)||[]).forEach(m=>appendGCBubble(m.mine,m.from_name,m.content,m.from_role));
         win.scrollTop=win.scrollHeight; groupUnread[gid]=0; updateFriendBadge();
     }).catch(()=>{});
     setTimeout(()=>{const i=document.getElementById('gc-input'); i&&i.focus();},60);
 }
-function appendGCBubble(mine,name,content){
+function appendGCBubble(mine,name,content,role){
     const win=document.getElementById('gc-window'); if(!win) return;
     const g=document.createElement('div'); g.className='msg-group'+(mine?' self':'');
-    const av=document.createElement('div'); av.className='msg-avatar'; av.innerHTML=mine?frAva('我'):frAva(name);
+    const av=document.createElement('div'); av.className='msg-avatar'+(role?(' '+role):'');
+    av.innerHTML = mine ? frAva('我') : ((role && AVATARS[role]) ? AVATARS[role] : frAva(name));
     const col=document.createElement('div'); col.className='bubble-col';
     if(!mine){ const s=document.createElement('div'); s.className='msg-sender'; s.textContent=name; col.appendChild(s); }
     const b=document.createElement('div'); b.className='bubble no-anim'; b.textContent=content;
@@ -2632,7 +2641,7 @@ socket.on('group_invited', () => { if (currentPanel === 'friends') loadGroups();
 socket.on('group_msg', (m) => {
     const mine = m.from_uid === myUid();
     if (currentPanel === 'group-chat' && currentGroup && m.group_id === currentGroup.id) {
-        appendGCBubble(mine, m.from_name, m.content);
+        appendGCBubble(mine, m.from_name, m.content, m.from_role);
     } else if (!mine) {
         groupUnread[m.group_id] = (groupUnread[m.group_id] || 0) + 1;
         updateFriendBadge();
@@ -3452,6 +3461,8 @@ document.querySelectorAll('.dm-upload-file').forEach(input => {
       <input id="group-name-input" placeholder="群名称" style="width:100%;background:var(--bg2);border:1px solid var(--border2);border-radius:10px;padding:11px 14px;color:var(--text);outline:none;font-size:15px;font-family:inherit;margin-bottom:14px">
       <div class="section-label" style="margin:0 0 4px">选好友入群</div>
       <div id="group-member-pick"></div>
+      <div class="section-label" style="margin:14px 0 4px">拉 AI 朋友进群（可选，AI 会在群里一起聊）</div>
+      <div id="group-ai-pick"></div>
     </div>
     <div style="display:flex;justify-content:flex-end;gap:10px;padding:14px 18px;border-top:1px solid var(--border)">
       <button onclick="closeGroupCreate()" style="background:transparent;color:var(--text-sub);border:1px solid var(--border2);border-radius:10px;padding:9px 16px;cursor:pointer;font-family:inherit">取消</button>

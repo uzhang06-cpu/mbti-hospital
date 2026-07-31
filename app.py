@@ -1892,6 +1892,7 @@ def group_create():
     data = request.get_json(force=True) or {}
     name = (data.get("name") or "").strip() or "新群聊"
     member_uids = data.get("member_uids") or []
+    ai_members = [r for r in (data.get("ai_members") or []) if r in ["ENFP","INFP","ENTP","ENTJ","ESTJ","ENFJ"]]
     db = get_mdb()
     members = [uid]
     for m in member_uids:
@@ -1899,7 +1900,7 @@ def group_create():
             members.append(m)
     gid, now = str(uuid.uuid4()), datetime.utcnow()
     db["groups"].insert_one({"id": gid, "name": name, "owner_uid": uid,
-                             "members": members, "ai_members": [], "created_at": now})
+                             "members": members, "ai_members": ai_members, "created_at": now})
     for m in members:
         if m != uid:
             socketio.emit("group_invited", {"id": gid, "name": name}, room=m)
@@ -1931,8 +1932,9 @@ def group_history(gid):
     if not _group_member(db, gid, uid): return jsonify({"error": "非群成员"}), 403
     rows = list(db["group_messages"].find({"group_id": gid}, sort=[("created_at", 1)]).limit(100))
     db["group_reads"].update_one({"uid": uid, "group_id": gid}, {"$set": {"last_read": datetime.utcnow()}}, upsert=True)
-    return jsonify({"messages": [{"from_name": m.get("from_name", ""), "content": m.get("content", ""),
-                                  "mine": m.get("from_uid") == uid, "created_at": str(m.get("created_at", ""))} for m in rows]})
+    return jsonify({"messages": [{"from_name": m.get("from_name", ""), "from_role": m.get("from_role"),
+                                  "content": m.get("content", ""), "mine": m.get("from_uid") == uid,
+                                  "created_at": str(m.get("created_at", ""))} for m in rows]})
 
 
 @app.route("/api/groups/<gid>/message", methods=["POST"])
@@ -1948,11 +1950,72 @@ def group_message(gid):
     now, mid = datetime.utcnow(), str(uuid.uuid4())
     db["group_messages"].insert_one({"id": mid, "group_id": gid, "from_uid": uid,
                                      "from_name": uname, "content": content, "created_at": now})
-    payload = {"id": mid, "group_id": gid, "from_uid": uid, "from_name": uname,
+    payload = {"id": mid, "group_id": gid, "from_uid": uid, "from_role": None, "from_name": uname,
                "content": content, "created_at": str(now)}
     for m in g.get("members", []):
         socketio.emit("group_msg", payload, room=m)
+    # 群里的 AI 成员按概率接话（AI+真人混群）
+    ai_members = g.get("ai_members", [])
+    if ai_members:
+        responders = [r for r in ai_members if random.random() < CUSTOM_CONFIG[r].get("trigger_prob", 0.5)]
+        random.shuffle(responders)
+        for r in responders[:2]:
+            socketio.start_background_task(_delayed_group_ai, gid, r, uname, content)
     return jsonify({"ok": True, "id": mid})
+
+
+def _delayed_group_ai(gid, role, tname, content):
+    socketio.sleep(random.uniform(1.0, 4.0))
+    trigger_group_ai_reply(gid, role, tname, content)
+
+
+def trigger_group_ai_reply(gid, role, trigger_name, trigger_content, depth=0):
+    """群里的 AI 成员在真人群中按人设接话，广播给所有群成员。"""
+    db = get_mdb()
+    g = db["groups"].find_one({"id": gid})
+    if not g or role not in g.get("ai_members", []):
+        return
+    cfg = CUSTOM_CONFIG[role]
+    recent = list(db["group_messages"].find({"group_id": gid}, sort=[("created_at", -1)], limit=10))
+    recent.reverse()
+    convo = "\n".join([f"{m.get('from_name','?')}：{m.get('content','')}" for m in recent])
+    others = "、".join([ROLE_NAME[r] for r in g.get("ai_members", []) if r != role])
+    sys_prompt = (PERSONA_BASE[role] + "\n\n"
+                  f"你在一个微信群「{g.get('name','群聊')}」里，群里有真人朋友"
+                  f"{('，还有其他 AI 朋友（'+others+'）' ) if others else ''}。\n"
+                  f"当前时间：{_now_desc()}\n今天的你：{daily_state(gid, role)}\n\n{FORMAT_RULES}\n\n你平时打字大概这个感觉：{STYLE_VOICE[role]}")
+    user_prompt = (f"群里最近在聊：\n{convo}\n\n{trigger_name}刚说：「{trigger_content}」\n"
+                   "像在群里一样自然接一句（有兴趣才接、没感觉就随口应一句、别复读别人）。")
+    try:
+        resp = call_llm(role, messages=[{"role": "user", "content": user_prompt}],
+                        max_tokens=sample_tokens(), temperature=cfg["temperature"], system_prompt=sys_prompt)
+        raw = clean_raw(role, resp)
+        raw = extract_image(raw)[1].replace("[VOICE]", "")   # 群里 AI 暂不发图/语音
+        bubbles = dedup_bubbles(split_bubbles(raw), [m.get("content", "") for m in recent])
+        if not bubbles:
+            return
+        socketio.sleep(read_delay(len(trigger_content or "")))
+        members = g.get("members", [])
+        for i, bubble in enumerate(bubbles):
+            socketio.sleep(min(simulate_typing(role, len(bubble)), 4.0))
+            now, mid = datetime.utcnow(), str(uuid.uuid4())
+            doc = {"id": mid, "group_id": gid, "from_uid": f"ai:{role}", "from_role": role,
+                   "from_name": ROLE_NAME[role], "content": bubble, "created_at": now}
+            db["group_messages"].insert_one(doc)
+            payload = {**doc, "created_at": str(now)}
+            for m in members:
+                socketio.emit("group_msg", payload, room=m)
+            if i < len(bubbles) - 1:
+                socketio.sleep(random.uniform(0.4, 1.0))
+        # AI 之间接话（收敛：最多再拉一个，depth<1）
+        if depth < 1:
+            merged = " ".join(bubbles)
+            for other_role in g.get("ai_members", []):
+                if other_role != role and random.random() < 0.25:
+                    socketio.start_background_task(trigger_group_ai_reply, gid, other_role, ROLE_NAME[role], merged, depth + 1)
+                    break
+    except Exception as e:
+        print(f"[GroupAI] {e}", flush=True)
 
 
 @app.route("/api/upload_image", methods=["POST"])
