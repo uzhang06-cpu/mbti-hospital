@@ -1433,11 +1433,13 @@ def create_moment():
     for r in reactors:
         socketio.start_background_task(trigger_moment_reaction, r, mid, content, uid, room)
 
-    return jsonify({"ok": True, "moment": {
-        "id": mid, "role": "INFJ", "content": content, "image": doc["image"],
-        "images": urls, "audio": "", "created_at": str(now),
-        "likes": [], "liked_by_user": False, "comments": []
-    }})
+    base = {"id": mid, "role": "INFJ", "content": content, "image": doc["image"],
+            "images": urls, "audio": "", "created_at": str(now),
+            "likes": [], "liked_by_user": False, "comments": []}
+    # 实时推送给好友，让他们的朋友圈立刻出现这条（作者=我，对他们而言 mine=False）
+    for f in db["friendships"].find({"uid": uid}):
+        socketio.emit("new_moment", {**base, "author": user["username"], "mine": False}, room=f["friend_uid"])
+    return jsonify({"ok": True, "moment": {**base, "author": "我", "mine": True}})
 
 
 def trigger_moment_reaction(role, moment_id, user_content, user_id, room):
@@ -1985,13 +1987,13 @@ def trigger_group_ai_reply(gid, role, trigger_name, trigger_content, depth=0):
                   f"{('，还有其他 AI 朋友（'+others+'）' ) if others else ''}。\n"
                   f"当前时间：{_now_desc()}\n今天的你：{daily_state(gid, role)}\n\n{FORMAT_RULES}\n\n你平时打字大概这个感觉：{STYLE_VOICE[role]}")
     user_prompt = (f"群里最近在聊：\n{convo}\n\n{trigger_name}刚说：「{trigger_content}」\n"
-                   "像在群里一样自然接一句（有兴趣才接、没感觉就随口应一句、别复读别人）。")
+                   "在群里随口接一两句就好：就回应刚才这句、别跑题、别一次发一大堆、别换好几个话题。没兴趣就只应一句或干脆别接。")
     try:
         resp = call_llm(role, messages=[{"role": "user", "content": user_prompt}],
-                        max_tokens=sample_tokens(), temperature=cfg["temperature"], system_prompt=sys_prompt)
+                        max_tokens=random.choice([35, 45, 55, 65]), temperature=cfg["temperature"], system_prompt=sys_prompt)
         raw = clean_raw(role, resp)
         raw = extract_image(raw)[1].replace("[VOICE]", "")   # 群里 AI 暂不发图/语音
-        bubbles = dedup_bubbles(split_bubbles(raw), [m.get("content", "") for m in recent])
+        bubbles = dedup_bubbles(split_bubbles(raw), [m.get("content", "") for m in recent])[:2]
         if not bubbles:
             return
         socketio.sleep(read_delay(len(trigger_content or "")))
