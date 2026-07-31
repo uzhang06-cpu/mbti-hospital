@@ -500,9 +500,10 @@ def clean_raw(role, text):
 
 
 def split_bubbles(text):
-    parts = [b.strip() for b in re.split(r"\|\|\||\n", text) if b.strip()]
-    parts = [p for p in parts if re.search(r"[一-龥a-zA-Z0-9]", p)]
-    return parts if parts else ([text.strip()] if re.search(r"[一-龥a-zA-Z0-9]", text) else [])
+    parts = re.split(r"\|{2,}|\n", text)                       # 2个及以上竖线 或 换行 都当分隔
+    parts = [b.strip().strip("|｜").strip() for b in parts]     # 去掉每条残留的竖线/空白
+    parts = [p for p in parts if p and re.search(r"[一-龥a-zA-Z0-9]", p)]
+    return parts if parts else ([text.strip("|｜ \n")] if re.search(r"[一-龥a-zA-Z0-9]", text) else [])
 
 
 def sample_tokens():
