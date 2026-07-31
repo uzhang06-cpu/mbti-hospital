@@ -505,12 +505,56 @@ def split_bubbles(text):
     return parts if parts else ([text.strip()] if re.search(r"[一-龥a-zA-Z0-9]", text) else [])
 
 
+def sample_tokens():
+    """单条回复长度上限：多数短、偶尔长一点（不是硬顶，保留自然变化，别一棒子打死）。"""
+    return random.choices([45, 60, 75, 95, 130], weights=[26, 28, 22, 15, 9])[0]
+
+def _sim(a, b):
+    """字符三元组 Jaccard 相似度，用来识别车轱辘话。"""
+    a = re.sub(r"\s+", "", a); b = re.sub(r"\s+", "", b)
+    if len(a) < 3 or len(b) < 3:
+        return 1.0 if a == b else 0.0
+    A = {a[i:i+3] for i in range(len(a)-2)}
+    B = {b[i:i+3] for i in range(len(b)-2)}
+    return len(A & B) / len(A | B) if (A and B) else 0.0
+
+def dedup_bubbles(bubbles, recent):
+    """丢掉跟最近/本轮已说过太像的气泡（重复啰嗦），但绝不全丢；短语气词不判，允许自然重复。"""
+    out, seen = [], list(recent)
+    for b in bubbles:
+        if len(b.strip()) < 5:
+            out.append(b); continue
+        if any(_sim(b, r) > 0.7 for r in seen):
+            continue
+        out.append(b); seen.append(b)
+    return out if out else bubbles[-1:]
+
+def recent_group_texts(uid, limit=8):
+    try:
+        rows = list(get_mdb()["messages"].find({"user_id": uid}, sort=[("timestamp", -1)], limit=limit))
+        return [r.get("content", "") for r in rows if r.get("content")]
+    except Exception:
+        return []
+
+def recent_dm_texts(uid, role, limit=8):
+    try:
+        rows = list(get_mdb()["dm_messages"].find({"user_id": uid, "chat_role": role}, sort=[("timestamp", -1)], limit=limit))
+        return [r.get("content", "") for r in rows if r.get("content")]
+    except Exception:
+        return []
+
+def read_delay(msg_len=0):
+    """回消息前'看一眼+开始打字'的自然停顿，避免秒回。"""
+    return random.uniform(0.8, 2.0) + min(msg_len, 50) / 60.0
+
+
 FORMAT_RULES = (
     "【怎么发消息】\n"
     "你就是在微信上跟朋友打字的大学生，像真人一样发：\n"
     "- 短。大多数就几个字到一句话；想多说就拆成好几条、每条一句，用 ||| 隔开。\n"
     "- 随口:「诶」「草」「啊这」「哈哈哈」「绝了」「离谱」随便用；可以不打标点、可以用省略号、可以有错别字、可以用 yyds/xswl 这种缩写。\n"
     "- 不用每句都接、也不用面面俱到。想接就接、没感觉就随口应一句、懒得理就丢俩字。别升华总结、别「首先其次」、别在结尾问「你觉得呢」这种客套。\n"
+    "- 别车轱辘话来回说，别重复你自己或别人刚说过的意思，换句话或干脆别接。\n"
     "- 别写括号动作或旁白，别刻意堆表情符号。\n"
     "- 发图:想发图或朋友圈配图时，先正常说一两句，再在最后单独一行 [IMG: 15字内简短画面]（不需要就不写，别把描述当聊天念出来）。\n"
     "- 语音:很激动/很懒/想撒娇时，文末加 [VOICE]（不需要就不写）。"
@@ -994,7 +1038,7 @@ def trigger_ai_reply(role, trigger_role, trigger_content, user_id, room, is_star
         resp_content = call_llm(
             role,
             messages=[{"role": "user", "content": user_task}],
-            max_tokens=cfg["max_tokens"], temperature=cfg["temperature"],
+            max_tokens=sample_tokens(), temperature=cfg["temperature"],
             system_prompt=sys_prompt,
         )
         raw = clean_raw(role, resp_content)
@@ -1002,6 +1046,7 @@ def trigger_ai_reply(role, trigger_role, trigger_content, user_id, room, is_star
         img_url = search_image_url(img_desc, role) if img_desc else ""
 
         bubbles = split_bubbles(raw)
+        bubbles = dedup_bubbles(bubbles, recent_group_texts(user_id))
         merged = " ".join(bubbles) if bubbles else raw
 
         # 强制发图：用户要求发图但AI没输出[IMG:]时，用回复内容搜图
@@ -1058,6 +1103,7 @@ def trigger_ai_reply(role, trigger_role, trigger_content, user_id, room, is_star
                 bump_rel(user_id, trigger_role, "ENTP", fric=0.15)
         decay_friction(user_id)
 
+        socketio.sleep(read_delay(len(trigger_content or "")))
         for i, bubble in enumerate(bubbles):
             t, elapsed = simulate_typing(role, len(bubble)), 0
             while elapsed < t:
@@ -1098,7 +1144,7 @@ def trigger_dm_reply(role, user_content, user_id, room):
         resp_content = call_llm(
             role,
             messages=[{"role": "user", "content": user_task}],
-            max_tokens=cfg["max_tokens"], temperature=cfg["temperature"],
+            max_tokens=sample_tokens(), temperature=cfg["temperature"],
             system_prompt=sys_prompt,
         )
         raw = clean_raw(role, resp_content)
@@ -1106,6 +1152,7 @@ def trigger_dm_reply(role, user_content, user_id, room):
         img_url = search_image_url(img_desc, role) if img_desc else ""
 
         bubbles = split_bubbles(raw)
+        bubbles = dedup_bubbles(bubbles, recent_dm_texts(user_id, role))
         merged = " ".join(bubbles) if bubbles else raw
 
         # 强制发图：用户要求发图但AI没输出[IMG:]时，用回复内容搜图
@@ -1141,6 +1188,7 @@ def trigger_dm_reply(role, user_content, user_id, room):
         bubbles = [b.replace("[VOICE]", "") for b in bubbles]
 
         db = get_mdb()
+        socketio.sleep(read_delay(len(user_content or "")))
         for i, bubble in enumerate(bubbles):
             t, elapsed = simulate_typing(role, len(bubble)), 0
             while elapsed < t:
@@ -1533,44 +1581,6 @@ def memory_manager():
         try:
             global chat_counter
             chat_counter = max(0, chat_counter - 30)
-            now = datetime.utcnow()
-            db  = get_mdb()
-
-            # 对每个活跃用户生成摘要
-            for uid in list(USER_ROOMS.keys()):
-                last_summary = db["summaries"].find_one({"user_id": uid}, sort=[("end_time", -1)])
-                if last_summary:
-                    le = last_summary["end_time"]
-                    if not isinstance(le, datetime): le = now - timedelta(hours=13)
-                    if (now - le).total_seconds() < 12 * 3600:
-                        continue
-                    start_time = le
-                else:
-                    start_time = now - timedelta(hours=12)
-                end_time = start_time + timedelta(hours=12)
-
-                msgs = list(db["messages"].find(
-                    {"user_id": uid, "timestamp": {"$gte": start_time, "$lt": end_time}},
-                    sort=[("timestamp", 1)]
-                ))
-                if not msgs: continue
-                msg_text = "\n".join([f"{m['role']}: {m.get('content','')}" for m in msgs])
-                prompt   = (f"这是六个好朋友在微信群里的聊天记录。\n时间段：{start_time} 到 {end_time}\n"
-                            f"请总结这段时间内发生了什么有趣的事、大家讨论了什么话题。\n要求：简练、不超过150字。\n\n聊天记录：\n{msg_text}")
-                try:
-                    sc = call_llm("INFJ", messages=[{"role": "user", "content": prompt}], max_tokens=200)
-                    db["summaries"].insert_one({
-                        "user_id": uid, "start_time": start_time, "end_time": end_time,
-                        "content": sc.strip(), "created_at": now
-                    })
-                except Exception:
-                    pass
-
-                # 清理 7 天前的摘要
-                db["summaries"].delete_many({
-                    "user_id": uid, "end_time": {"$lt": now - timedelta(days=7)}
-                })
-
             time.sleep(600)
         except Exception:
             time.sleep(60)
