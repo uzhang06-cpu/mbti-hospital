@@ -340,10 +340,10 @@ RELATIONSHIP_DYNAMICS = {
     ("ENFJ",  "ENTJ"): {"boost": 0.20, "hint": "你会柔化思睿的强势"},
 }
 
-def score_chain_candidate(candidate: str, trigger_role: str, message: str) -> float:
+def score_chain_candidate(uid, candidate: str, trigger_role: str, message: str) -> float:
     """
     综合评分：决定某角色参与链式对话的可能性
-    考虑：基础活跃度 + 内容兴趣 + 关系加成 - 刚发言冷却 - 连续发言惩罚
+    考虑：基础活跃度 + 内容兴趣 + 关系(演化中的亲近度) - 刚发言冷却 - 连续发言惩罚
     """
     score = CUSTOM_CONFIG[candidate].get("trigger_prob", 0.4)
 
@@ -355,10 +355,11 @@ def score_chain_candidate(candidate: str, trigger_role: str, message: str) -> fl
     # 话题热度加成：话题越热，大家越容易参与
     score += TOPIC_STATE["heat"] * 0.15
 
-    # 关系对加成
-    dyn = RELATIONSHIP_DYNAMICS.get((candidate, trigger_role))
-    if dyn:
-        score += dyn["boost"]
+    # 关系加成：用按用户演化的亲近度；有点小摩擦反而更想接话（斗嘴）
+    rel = get_rel(uid, candidate, trigger_role)
+    score += rel["aff"] * 0.4
+    if rel["fric"] > 0.4:
+        score += 0.15
 
     # 刚发言冷却（30 秒内说过话，降权）
     last = ROLE_STATE[candidate].get("last_spoke")
@@ -374,11 +375,11 @@ def score_chain_candidate(candidate: str, trigger_role: str, message: str) -> fl
 
     return max(0.0, score)
 
-def select_chain_participant(trigger_role: str, message: str) -> str | None:
+def select_chain_participant(uid, trigger_role: str, message: str) -> str | None:
     """加权随机选下一个说话的人"""
     candidates = [r for r in ["ENFP", "INFP", "ENTP", "ENTJ", "ESTJ", "ENFJ"]
                   if r != trigger_role]
-    scores = {r: score_chain_candidate(r, trigger_role, message) for r in candidates}
+    scores = {r: score_chain_candidate(uid, r, trigger_role, message) for r in candidates}
     total = sum(scores.values())
     if total <= 0:
         return None
@@ -386,14 +387,61 @@ def select_chain_participant(trigger_role: str, message: str) -> str | None:
     weights = list(scores.values())
     return random.choices(roles, weights=weights, k=1)[0]
 
-def get_relationship_hint(role: str, trigger_role: str) -> str:
-    """给 prompt 传入关系提示，让 AI 说话时带入关系感"""
-    dyn = RELATIONSHIP_DYNAMICS.get((role, trigger_role))
-    return f"提示：{dyn['hint']}" if dyn else ""
-
 
 # 全局状态锁
 state_lock = threading.Lock()
+
+# ── 关系图谱（按用户隔离，随互动演化）──────────────────────────
+# REL[uid][(a,b)] = {aff 亲近度, fam 熟悉度, fric 近期小摩擦}
+# MBTI 兼容播种，之后随真实互动升降，取代写死的关系 hint
+REL = {}
+def _rel_seed(a, b):
+    dyn = RELATIONSHIP_DYNAMICS.get((a, b))
+    return {"aff": (dyn["boost"] if dyn else 0.15), "fam": 0.2, "fric": 0.0}
+def get_rel(uid, a, b):
+    u = REL.setdefault(uid, {})
+    if (a, b) not in u:
+        u[(a, b)] = _rel_seed(a, b)
+    return u[(a, b)]
+def bump_rel(uid, a, b, aff=0.0, fam=0.0, fric=0.0):
+    with state_lock:
+        r = get_rel(uid, a, b)
+        r["aff"]  = max(-1.0, min(1.0, r["aff"] + aff))
+        r["fam"]  = max(0.0, min(1.0, r["fam"] + fam))
+        r["fric"] = max(0.0, min(1.0, r["fric"] + fric))
+def decay_friction(uid):
+    for r in REL.get(uid, {}).values():
+        r["fric"] = max(0.0, r["fric"] * 0.9)
+def relation_context(uid, role, other):
+    """把'关系状态'当上下文给模型，而不是命令它做某个动作。"""
+    if not other or other == role or other == "INFJ":
+        return ""
+    r = get_rel(uid, role, other)
+    name = ROLE_NAME.get(other, other)
+    if r["fric"] > 0.45: return f"你最近跟{name}有点别扭，说话可能带点刺。"
+    if r["fam"] < 0.3:   return f"你跟{name}还没那么熟。"
+    if r["aff"] > 0.5:   return f"你跟{name}很铁，说话很随便、爱互相损。"
+    if r["aff"] > 0.25:  return f"你跟{name}关系不错。"
+    return f"你跟{name}关系一般般。"
+
+# ── 每日状态（立体性：每天变一次，按用户隔离）──────────────────
+DAILY_POOL = {
+    "ENFP": ["今天贼精神，一堆想法憋不住", "有点困但还是很兴奋", "今天摆烂只想躺着刷手机", "刚忙完社团的事，累但爽"],
+    "INFP": ["今天有点emo，说不上来", "状态还行，安安静静的", "昨晚没睡好，今天蔫蔫的", "今天灵感不错，画了会儿"],
+    "ENTP": ["脑子今天转得飞快，手痒想抬杠", "有点无聊，找点乐子", "在赶个项目，有点亢奋", "熬夜了但精神还行"],
+    "ENTJ": ["今天效率拉满，事事在推进", "有点烦，一堆破事", "刚开完会脑子有点炸", "状态在线，准备卷"],
+    "ESTJ": ["今天计划排满，按部就班", "有人不守规矩，有点上火", "备考中，绷得比较紧", "收拾完了，神清气爽"],
+    "ENFJ": ["今天心情不错，想张罗点啥", "有点累但还撑得住", "在操心朋友的事", "刚做完饭，挺有成就感"],
+}
+DAILY = {}
+def daily_state(uid, role):
+    today = datetime.now().strftime("%Y%m%d")
+    u = DAILY.setdefault(uid, {})
+    cur = u.get(role)
+    if not cur or cur.get("date") != today:
+        cur = {"date": today, "line": random.choice(DAILY_POOL.get(role, ["状态一般"]))}
+        u[role] = cur
+    return cur["line"]
 
 
 MOOD_CONFIG = {
@@ -783,8 +831,8 @@ def make_prompt(role, mode, user_id, life_event="", is_chain=False, trigger_role
     now_hour = datetime.now().hour
     night = "\n提示：现在是深夜，可以说一些平时不太说的话。" if role == "INFP" and (now_hour >= 23 or now_hour <= 4) else ""
     persona = PERSONA_BASE[role]
-    state = f"当前时间：{_now_desc()}"
-    rh = get_relationship_hint(role, trigger_role) if is_chain and trigger_role else ""
+    state = f"当前时间：{_now_desc()}\n今天的你：{daily_state(user_id, role)}"
+    rh = relation_context(user_id, role, trigger_role) if is_chain and trigger_role else ""
     if rh: state += f"\n{rh}"
     history  = build_history(user_id)
     cross_mem = build_cross_memory(role, user_id)
@@ -832,7 +880,7 @@ def make_dm_prompt(role, user_content, user_id):
     cross_mem = build_cross_memory(role, user_id)
     want_img = any(k in user_content for k in ["发图", "发张图", "发照片", "看照片", "发个图", "拍张", "自拍", "看看你"])
     img_hint = " （ta想看图，正常聊两句后在末尾单独一行 [IMG: 简短画面]）" if want_img else ""
-    system_prompt = f"{persona}\n\n当前时间：{_now_desc()}\n\n{FORMAT_RULES}\n\n你平时打字大概这个感觉：{STYLE_VOICE[role]}"
+    system_prompt = f"{persona}\n\n当前时间：{_now_desc()}\n今天的你：{daily_state(user_id, role)}\n\n{FORMAT_RULES}\n\n你平时打字大概这个感觉：{STYLE_VOICE[role]}"
     user_prompt = f"{cross_mem}\n\n你在跟好朋友 INFJ（我）一对一私聊。ta刚说：「{user_content}」\n\n你俩的私聊记录：\n{history}\n\n自然回ta。一对一比群里更走心、更放得开，别端着。{img_hint}"
     return system_prompt, user_prompt
 
@@ -921,7 +969,7 @@ def create_single_moment(role, user_id, room):
         socketio.start_background_task(trigger_moment_interaction, mid, role, user_id, room)
 
 
-def trigger_ai_reply(role, trigger_role, trigger_content, user_id, room, is_startup=False, force_mode="", is_chain=False):
+def trigger_ai_reply(role, trigger_role, trigger_content, user_id, room, is_startup=False, force_mode="", is_chain=False, depth=0):
     print(f"[DEBUG] Triggering AI reply: role={role}, trigger_role={trigger_role}, mode={force_mode}")
     if role not in ROLE_NAME: return
     global chat_counter
@@ -1001,7 +1049,14 @@ def trigger_ai_reply(role, trigger_role, trigger_content, user_id, room, is_star
             ROLE_STATE[role]["last_spoke"] = datetime.now()
             ROLE_STATE[role]["consecutive"] += 1
 
-        if trigger_role and trigger_role != "INFJ": update_mood(trigger_role, "got_response")
+        if trigger_role and trigger_role != "INFJ":
+            update_mood(trigger_role, "got_response")
+            # 关系随互动演化：互相回应→更熟更亲；阿程怼暖暖/小沈→对方对他多点小摩擦
+            bump_rel(user_id, role, trigger_role, aff=0.02, fam=0.04)
+            bump_rel(user_id, trigger_role, role, fam=0.03)
+            if role == "ENTP" and trigger_role in ("ENFP", "INFP"):
+                bump_rel(user_id, trigger_role, "ENTP", fric=0.15)
+        decay_friction(user_id)
 
         for i, bubble in enumerate(bubbles):
             t, elapsed = simulate_typing(role, len(bubble)), 0
@@ -1019,19 +1074,15 @@ def trigger_ai_reply(role, trigger_role, trigger_content, user_id, room, is_star
 
         if img_url: socketio.emit("ai_message", {"role": role, "content": "", "image": img_url, "mode": "full", "id": uuid.uuid4().hex}, room=room)
 
-        # 链式接话
-        # is_chain=False（直接回用户）：60% 概率触发链
-        # is_chain=True（已在链中）：45% 概率继续，让对话自然收尾
-        # 这样对话会从"回应用户"逐渐漂移成"AI 们自己聊"
-        if chat_counter < 400 and not is_startup:
-            # 话题越热链越容易继续，话题冷了更容易死
-            chain_prob = (0.40 if is_chain else 0.58) * (0.6 + TOPIC_STATE["heat"] * 0.4)
-            next_role = select_chain_participant(role, merged)
+        # 链式接话（已收敛）：降低接龙概率 + 限制深度，避免 AI 之间自我繁殖刷屏
+        if chat_counter < 400 and not is_startup and depth < 2:
+            chain_prob = (0.28 if is_chain else 0.42) * (0.6 + TOPIC_STATE["heat"] * 0.4)
+            next_role = select_chain_participant(user_id, role, merged)
             if next_role and random.random() < chain_prob:
                 delay = random.uniform(4.0, 10.0) if is_chain else random.uniform(3.0, 7.0)
-                def _chain(r=next_role, d=delay, uid=user_id, rm=room):
+                def _chain(r=next_role, d=delay, uid=user_id, rm=room, dep=depth + 1):
                     socketio.sleep(d)
-                    trigger_ai_reply(r, role, merged, uid, rm, is_chain=True)
+                    trigger_ai_reply(r, role, merged, uid, rm, is_chain=True, depth=dep)
                 socketio.start_background_task(_chain)
     except Exception as e:
         print(f"[ERROR] trigger_ai_reply failed: {e}")
