@@ -2512,8 +2512,8 @@ socket.on('new_comment', (commentData) => {
 socket.on('moment_update', (data) => {
     const moment = momentsData.find(m => m.id === data.id);
     if (moment) {
-        moment.likes = data.likes;
-        moment.liked_by_user = data.liked_by_user;
+        if (data.likes) moment.likes = data.likes;
+        if ('liked_by_user' in data) moment.liked_by_user = data.liked_by_user;
         renderMoments();
     }
 });
@@ -2801,7 +2801,7 @@ function renderMoments() {
         // Render comments
         const comments = m.comments || [];
         const commentListHtml = comments.map(c =>
-            `<div class="comment-item"><span class="comment-role ${c.role}">${ROLE_NAMES[c.role] || c.role}:</span>${escapeHtml(c.content)}</div>`
+            `<div class="comment-item"><span class="comment-role">${escapeHtml(c.author || ROLE_NAMES[c.role] || c.role)}:</span>${escapeHtml(c.content)}</div>`
         ).join('');
         const hasComments = comments.length > 0;
 
@@ -2810,10 +2810,13 @@ function renderMoments() {
             ? `<div class="moment-grid n${Math.min(imgs.length, 9)}">${imgs.slice(0, 9).map(u => `<img src="${u}" loading="lazy" onclick="window.open('${u}','_blank')">`).join('')}</div>`
             : '';
 
+        const isAIrole = ['ENFP','INFP','ENTP','ENTJ','ESTJ','ENFJ'].includes(m.role);
+        const avaHtml = isAIrole ? (AVATARS[m.role] || '') : (m.mine ? (AVATARS['INFJ'] || '') : frAva(m.author));
+        const authorName = m.author || ROLE_NAMES[m.role] || m.role;
         card.innerHTML = `
             <div class="moment-header">
-                <div class="moment-avatar ${m.role}">${AVATARS[m.role] || ''}</div>
-                <div class="moment-meta"><div class="moment-name">${ROLE_NAMES[m.role] || m.role}</div><div class="moment-time">${timeStr}</div></div>
+                <div class="moment-avatar ${m.role}">${avaHtml}</div>
+                <div class="moment-meta"><div class="moment-name">${escapeHtml(authorName)}</div><div class="moment-time">${timeStr}</div></div>
             </div>
             <div class="moment-content">${escapeHtml(m.content)}</div>
             ${m.audio ? `

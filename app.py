@@ -1299,22 +1299,36 @@ def get_moments():
     user = _require_auth()
     if not user: return jsonify({"error": "未登录"}), 401
     db  = get_mdb()
-    uid = user["user_id"]
-    rows = list(db["moments"].find({"user_id": uid}, sort=[("created_at", -1)], limit=50))
+    uid = user["user_id"]; uname = user["username"]
+    # 我的沙盒动态 + 好友本人发的动态(role=INFJ)——朋友圈互通
+    fr = list(db["friendships"].find({"uid": uid}))
+    friend_uids = [f["friend_uid"] for f in fr]
+    friend_name = {f["friend_uid"]: f.get("friend_name", "") for f in fr}
+    query = {"$or": [{"user_id": uid}, {"user_id": {"$in": friend_uids}, "role": "INFJ"}]}
+    rows = list(db["moments"].find(query, sort=[("created_at", -1)], limit=60))
     result = []
     for m in rows:
-        mid = str(m["_id"])
-        comments = list(db["comments"].find({"user_id": uid, "moment_id": mid}, sort=[("created_at", 1)]))
+        mid = str(m["_id"]); owner = m.get("user_id"); role = m["role"]; mine = (owner == uid)
+        if role != "INFJ":
+            author = ROLE_NAME.get(role, role)          # AI 角色
+        elif mine:
+            author = "我"
+        else:
+            author = friend_name.get(owner, "朋友")       # 好友本人
+        comments = list(db["comments"].find({"user_id": owner, "moment_id": mid}, sort=[("created_at", 1)]))
+        likes = [x for x in (m.get("likes") or "").split(",") if x]
+        liked = (uname in likes) or (mine and "我" in likes)
         result.append({
-            "id": mid, "role": m["role"], "content": m.get("content",""),
+            "id": mid, "role": role, "author": author, "mine": mine,
+            "content": m.get("content",""),
             "image": m.get("image",""),
             "images": m.get("images") or ([m["image"]] if m.get("image") else []),
             "audio": m.get("audio",""),
             "created_at": str(m.get("created_at","")),
-            "likes": [x for x in (m.get("likes") or "").split(",") if x],
-            "liked_by_user": "我" in (m.get("likes") or ""),
-            "comments": [{"id": c.get("id",""), "role": c["role"], "content": c["content"],
-                          "created_at": str(c.get("created_at",""))} for c in comments]
+            "likes": likes, "liked_by_user": liked,
+            "comments": [{"id": c.get("id",""), "role": c.get("role",""),
+                          "author": ("我" if c.get("actor_uid") == uid else (ROLE_NAME.get(c.get("role",""), c.get("role","")))),
+                          "content": c["content"], "created_at": str(c.get("created_at",""))} for c in comments]
         })
     return jsonify({"moments": result})
 
@@ -1328,16 +1342,26 @@ def post_comment():
     content = data.get("content", "").strip()
     if not mid or not content: return jsonify({"ok": False}), 400
     db  = get_mdb()
-    uid = user["user_id"]
-    room = uid
+    uid = user["user_id"]; uname = user["username"]
+    try:
+        moment = db["moments"].find_one({"_id": ObjectId(mid)})
+    except Exception:
+        moment = None
+    if not moment: return jsonify({"ok": False, "error": "动态不存在"}), 404
+    owner = moment.get("user_id")
+    if owner != uid and not _are_friends(db, uid, owner):
+        return jsonify({"ok": False, "error": "无权评论"}), 403
     cid, now = str(uuid.uuid4()), datetime.utcnow()
-    db["comments"].insert_one({"id": cid, "moment_id": mid, "role": "我",
-                                "content": content, "created_at": now, "user_id": uid})
-    socketio.emit("new_comment", {"id": cid, "moment_id": mid, "role": "我",
-                                  "content": content, "created_at": str(now)}, room=room)
-    moment = db["moments"].find_one({"_id": ObjectId(mid), "user_id": uid})
-    if moment and moment["role"] in ["ENFP","INFP","ENTP","ENTJ","ESTJ","ENFJ"]:
-        socketio.start_background_task(trigger_comment_reply, moment["role"], mid, content, uid, room)
+    db["comments"].insert_one({"id": cid, "moment_id": mid, "role": uname, "actor_uid": uid,
+                                "content": content, "created_at": now, "user_id": owner})
+    payload = {"id": cid, "moment_id": mid, "role": uname, "actor_uid": uid,
+               "author": uname, "content": content, "created_at": str(now)}
+    socketio.emit("new_comment", payload, room=owner)          # 通知动态主人
+    if owner != uid:
+        socketio.emit("new_comment", payload, room=uid)        # 回显给评论者
+    # 只有我自己沙盒里的 AI 动态才触发 AI 回复
+    if owner == uid and moment.get("role") in ["ENFP","INFP","ENTP","ENTJ","ESTJ","ENFJ"]:
+        socketio.start_background_task(trigger_comment_reply, moment["role"], mid, content, uid, uid)
     return jsonify({"ok": True, "id": cid, "created_at": str(now)})
 
 
@@ -1442,13 +1466,26 @@ def like_moment():
     data = request.get_json(force=True)
     mid, like = data.get("moment_id"), data.get("like", True)
     db  = get_mdb()
-    row = db["moments"].find_one({"_id": ObjectId(mid), "user_id": user["user_id"]})
+    uid, uname = user["user_id"], user["username"]
+    try:
+        row = db["moments"].find_one({"_id": ObjectId(mid)})
+    except Exception:
+        row = None
     if not row: return jsonify({"ok": False}), 404
+    owner = row.get("user_id")
+    if owner != uid and not _are_friends(db, uid, owner):
+        return jsonify({"ok": False, "error": "无权"}), 403
     likes = [x for x in (row.get("likes") or "").split(",") if x]
-    if like and "我" not in likes:    likes.append("我")
-    elif not like and "我" in likes:  likes.remove("我")
+    if like and uname not in likes:
+        likes.append(uname)
+    elif not like:
+        if uname in likes: likes.remove(uname)
+        if owner == uid and "我" in likes: likes.remove("我")   # 清掉旧标记
     db["moments"].update_one({"_id": ObjectId(mid)}, {"$set": {"likes": ",".join(likes)}})
-    return jsonify({"ok": True, "likes": likes, "liked_by_user": "我" in likes})
+    liked = uname in likes or (owner == uid and "我" in likes)
+    # 通知动态主人（只更新点赞列表，不动对方自己的 liked 状态）
+    socketio.emit("moment_update", {"id": mid, "likes": likes}, room=owner)
+    return jsonify({"ok": True, "likes": likes, "liked_by_user": liked})
 
 
 def delayed_trigger(role, trigger_role, content, user_id, room, delay, force_mode="respond"):
