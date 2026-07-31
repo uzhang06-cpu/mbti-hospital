@@ -668,6 +668,39 @@ body.dark .moment-card:hover { box-shadow: 0 6px 24px rgba(0,0,0,0.4); }
 #compose-publish:hover { background: var(--accent-press); }
 #compose-publish:disabled { opacity: 0.5; cursor: default; }
 
+/* ── 实时语音通话 ── */
+#call-overlay {
+    position: fixed; inset: 0; z-index: 200;
+    background: linear-gradient(165deg, #24344f 0%, #0b1120 100%);
+    display: none; flex-direction: column; align-items: center;
+    color: #fff; padding: 60px 24px 44px; text-align: center;
+}
+#call-overlay.open { display: flex; }
+.call-avatar { width: 112px; height: 112px; border-radius: 50%; overflow: hidden; box-shadow: 0 10px 44px rgba(0,0,0,0.55); margin-bottom: 20px; flex-shrink: 0; }
+.call-avatar svg, .call-avatar img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.call-name { font-size: 23px; font-weight: 650; letter-spacing: 0.01em; }
+.call-status { font-size: 14px; color: rgba(255,255,255,0.7); margin-top: 10px; min-height: 20px; }
+.call-timer { font-size: 13px; color: rgba(255,255,255,0.45); margin-top: 4px; font-variant-numeric: tabular-nums; }
+.call-transcript { flex: 1; width: 100%; max-width: 460px; margin: 22px 0; overflow-y: auto; display: flex; flex-direction: column; gap: 9px; }
+.call-transcript::-webkit-scrollbar { width: 0; }
+.call-line { font-size: 14.5px; line-height: 1.45; padding: 9px 14px; border-radius: 16px; max-width: 82%; text-align: left; }
+.call-line.me { align-self: flex-end; background: var(--accent); border-bottom-right-radius: 5px; }
+.call-line.ai { align-self: flex-start; background: rgba(255,255,255,0.14); border-bottom-left-radius: 5px; }
+.call-controls { display: flex; flex-direction: column; align-items: center; gap: 20px; flex-shrink: 0; }
+.call-talk {
+    width: 112px; height: 112px; border-radius: 50%;
+    background: rgba(255,255,255,0.12); border: 2px solid rgba(255,255,255,0.28);
+    color: #fff; font-size: 16px; font-weight: 600; cursor: pointer; line-height: 1.25;
+    user-select: none; -webkit-user-select: none; -webkit-touch-callout: none;
+    display: flex; align-items: center; justify-content: center;
+    transition: transform 0.12s, background 0.15s, border-color 0.15s;
+}
+.call-talk.recording { background: #ff3b30; border-color: #ff6b62; transform: scale(1.07); }
+.call-talk:disabled { opacity: 0.45; cursor: default; }
+.call-end { width: 58px; height: 58px; border-radius: 50%; background: #ff3b30; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+.call-end svg { width: 26px; height: 26px; fill: none; stroke: #fff; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.call-end:hover { background: #e0352b; }
+
 .moment-actions { display: flex; align-items: center; gap: 8px; padding-top: 12px; border-top: 1px solid var(--border); }
 .action-btn {
     display: flex; align-items: center; gap: 6px;
@@ -1108,7 +1141,7 @@ input[type=range]::-webkit-slider-thumb:hover { transform: scale(1.1); }
                 <div class="chat-header-avatar ENFP" id="hav-ENFP"></div>
                 <div><div class="chat-header-name">暖暖</div><div class="chat-header-sub">新媒体运营 热情小太阳</div></div>
             </div>
-            <div class="chat-header-right"><div class="typing-bar-dm" id="typing-ENFP"></div><button class="icon-btn" onclick="openSidebar()" title="菜单" style="display:none" id="ham-ENFP"><svg class="ic" viewBox="0 0 24 24"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg></button></div>
+            <div class="chat-header-right"><div class="typing-bar-dm" id="typing-ENFP"></div><button class="icon-btn" onclick="startCall('ENFP')" title="语音通话"><svg class="ic" viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.9.34 1.85.57 2.81.7A2 2 0 0 1 22 16.92z"/></svg></button><button class="icon-btn" onclick="openSidebar()" title="菜单" style="display:none" id="ham-ENFP"><svg class="ic" viewBox="0 0 24 24"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg></button></div>
         </div>
         <div class="chat-window" id="chat-window-dm-ENFP"></div>
         <div class="input-area">
@@ -1127,7 +1160,7 @@ input[type=range]::-webkit-slider-thumb:hover { transform: scale(1.1); }
                 <div class="chat-header-avatar INFP" id="hav-INFP"></div>
                 <div><div class="chat-header-name">小沈</div><div class="chat-header-sub">自由插画师 温柔细腻</div></div>
             </div>
-            <div class="chat-header-right"><div class="typing-bar-dm" id="typing-INFP"></div><button class="icon-btn" onclick="openSidebar()" title="菜单" style="display:none" id="ham-INFP"><svg class="ic" viewBox="0 0 24 24"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg></button></div>
+            <div class="chat-header-right"><div class="typing-bar-dm" id="typing-INFP"></div><button class="icon-btn" onclick="startCall('INFP')" title="语音通话"><svg class="ic" viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.9.34 1.85.57 2.81.7A2 2 0 0 1 22 16.92z"/></svg></button><button class="icon-btn" onclick="openSidebar()" title="菜单" style="display:none" id="ham-INFP"><svg class="ic" viewBox="0 0 24 24"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg></button></div>
         </div>
         <div class="chat-window" id="chat-window-dm-INFP"></div>
         <div class="input-area">
@@ -1145,7 +1178,7 @@ input[type=range]::-webkit-slider-thumb:hover { transform: scale(1.1); }
                 <div class="chat-header-avatar ENTP" id="hav-ENTP"></div>
                 <div><div class="chat-header-name">老程</div><div class="chat-header-sub">产品经理 逻辑鬼才</div></div>
             </div>
-            <div class="chat-header-right"><div class="typing-bar-dm" id="typing-ENTP"></div><button class="icon-btn" onclick="openSidebar()" title="菜单" style="display:none" id="ham-ENTP"><svg class="ic" viewBox="0 0 24 24"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg></button></div>
+            <div class="chat-header-right"><div class="typing-bar-dm" id="typing-ENTP"></div><button class="icon-btn" onclick="startCall('ENTP')" title="语音通话"><svg class="ic" viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.9.34 1.85.57 2.81.7A2 2 0 0 1 22 16.92z"/></svg></button><button class="icon-btn" onclick="openSidebar()" title="菜单" style="display:none" id="ham-ENTP"><svg class="ic" viewBox="0 0 24 24"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg></button></div>
         </div>
         <div class="chat-window" id="chat-window-dm-ENTP"></div>
         <div class="input-area">
@@ -1163,7 +1196,7 @@ input[type=range]::-webkit-slider-thumb:hover { transform: scale(1.1); }
                 <div class="chat-header-avatar ENTJ" id="hav-ENTJ"></div>
                 <div><div class="chat-header-name">王姐</div><div class="chat-header-sub">创业合伙人 效率至上</div></div>
             </div>
-            <div class="chat-header-right"><div class="typing-bar-dm" id="typing-ENTJ"></div><button class="icon-btn" onclick="openSidebar()" title="菜单" style="display:none" id="ham-ENTJ"><svg class="ic" viewBox="0 0 24 24"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg></button></div>
+            <div class="chat-header-right"><div class="typing-bar-dm" id="typing-ENTJ"></div><button class="icon-btn" onclick="startCall('ENTJ')" title="语音通话"><svg class="ic" viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.9.34 1.85.57 2.81.7A2 2 0 0 1 22 16.92z"/></svg></button><button class="icon-btn" onclick="openSidebar()" title="菜单" style="display:none" id="ham-ENTJ"><svg class="ic" viewBox="0 0 24 24"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg></button></div>
         </div>
         <div class="chat-window" id="chat-window-dm-ENTJ"></div>
         <div class="input-area">
@@ -1181,7 +1214,7 @@ input[type=range]::-webkit-slider-thumb:hover { transform: scale(1.1); }
                 <div class="chat-header-avatar ESTJ" id="hav-ESTJ"></div>
                 <div><div class="chat-header-name">李姐</div><div class="chat-header-sub">财务经理 操心担当</div></div>
             </div>
-            <div class="chat-header-right"><div class="typing-bar-dm" id="typing-ESTJ"></div><button class="icon-btn" onclick="openSidebar()" title="菜单" style="display:none" id="ham-ESTJ"><svg class="ic" viewBox="0 0 24 24"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg></button></div>
+            <div class="chat-header-right"><div class="typing-bar-dm" id="typing-ESTJ"></div><button class="icon-btn" onclick="startCall('ESTJ')" title="语音通话"><svg class="ic" viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.9.34 1.85.57 2.81.7A2 2 0 0 1 22 16.92z"/></svg></button><button class="icon-btn" onclick="openSidebar()" title="菜单" style="display:none" id="ham-ESTJ"><svg class="ic" viewBox="0 0 24 24"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg></button></div>
         </div>
         <div class="chat-window" id="chat-window-dm-ESTJ"></div>
         <div class="input-area">
@@ -1203,7 +1236,7 @@ input[type=range]::-webkit-slider-thumb:hover { transform: scale(1.1); }
                 </div>
             </div>
             <div class="chat-header-right">
-                <div id="typing-bar-dm-ENFJ"></div>
+                <div id="typing-bar-dm-ENFJ"></div><button class="icon-btn" onclick="startCall('ENFJ')" title="语音通话"><svg class="ic" viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.9.34 1.85.57 2.81.7A2 2 0 0 1 22 16.92z"/></svg></button>
                 
                 <button class="icon-btn" onclick="openModal()" title="调参设置"><svg class="ic" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></button>
                 <button id="hamburger" onclick="openSidebar()" title="菜单"><svg class="ic" viewBox="0 0 24 24"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg></button>
@@ -2410,6 +2443,123 @@ function publishMoment() {
         .catch(err => { btn.disabled = false; btn.textContent = '发布'; alert('网络错误，发布失败'); console.error(err); });
 }
 
+/* ── 实时语音通话（按住说话）── */
+let call = { role:null, active:false, sec:0, timer:null, history:[], rec:null, stream:null, chunks:[], busy:false, start:0 };
+
+function startCall(role) {
+    if (call.active) return;
+    call = { role, active:true, sec:0, timer:null, history:[], rec:null, stream:null, chunks:[], busy:false, start:0 };
+    document.getElementById('call-avatar').innerHTML = AVATARS[role] || '';
+    document.getElementById('call-name').textContent = ROLE_NAMES[role] || role;
+    document.getElementById('call-transcript').innerHTML = '';
+    document.getElementById('call-timer').textContent = '00:00';
+    callSetStatus('正在接通…');
+    document.getElementById('call-overlay').classList.add('open');
+    call.timer = setInterval(() => {
+        call.sec++;
+        const mm = String(Math.floor(call.sec / 60)).padStart(2, '0');
+        const ss = String(call.sec % 60).padStart(2, '0');
+        const el = document.getElementById('call-timer'); if (el) el.textContent = mm + ':' + ss;
+    }, 1000);
+    bindCallTalk();
+    callReply(true, '');   // 角色先开口打招呼
+}
+function callSetStatus(s) { const el = document.getElementById('call-status'); if (el) el.textContent = s; }
+function callAddLine(who, text) {
+    if (!text) return;
+    const t = document.getElementById('call-transcript');
+    const d = document.createElement('div'); d.className = 'call-line ' + (who === 'me' ? 'me' : 'ai'); d.textContent = text;
+    t.appendChild(d); t.scrollTop = t.scrollHeight;
+}
+async function callReply(greeting, userText) {
+    if (!call.active) return;
+    call.busy = true;
+    callSetStatus(greeting ? '正在接通…' : '思考中…');
+    try {
+        const res = await authFetch('/api/call/reply', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ role: call.role, text: userText, greeting: greeting, history: call.history })
+        });
+        const data = await res.json();
+        if (!call.active) return;
+        if (data.ok && data.text) {
+            call.history.push({ from: 'ai', text: data.text });
+            callAddLine('ai', data.text);
+            if (data.audio) {
+                callSetStatus('对方正在说…');
+                const a = new Audio(data.audio);
+                const done = () => { if (call.active) callSetStatus('通话中·按住说话'); call.busy = false; };
+                a.onended = done; a.onerror = done;
+                a.play().catch(done);
+            } else { callSetStatus('通话中·按住说话'); call.busy = false; }
+        } else { callSetStatus('通话中·按住说话'); call.busy = false; }
+    } catch (e) { console.error('call reply err', e); callSetStatus('网络异常，稍后再说'); call.busy = false; }
+}
+function bindCallTalk() {
+    const btn = document.getElementById('call-talk');
+    if (!btn || btn._bound) return; btn._bound = true;
+    const down = (e) => { e.preventDefault(); callStartRec(); };
+    const up = (e) => { e.preventDefault(); callStopRec(); };
+    btn.addEventListener('mousedown', down);
+    btn.addEventListener('touchstart', down, { passive: false });
+    btn.addEventListener('mouseup', up);
+    btn.addEventListener('touchend', up);
+    btn.addEventListener('mouseleave', up);
+    btn.addEventListener('touchcancel', up);
+}
+function callStartRec() {
+    if (!call.active || call.busy) return;
+    navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => {
+        if (!call.active) { stream.getTracks().forEach(t => t.stop()); return; }
+        call.stream = stream;
+        let opts = {};
+        if (MediaRecorder.isTypeSupported('audio/webm;codecs=opus')) opts = { mimeType: 'audio/webm;codecs=opus' };
+        else if (MediaRecorder.isTypeSupported('audio/mp4')) opts = { mimeType: 'audio/mp4' };
+        try { call.rec = new MediaRecorder(stream, opts); } catch (e) { call.rec = new MediaRecorder(stream); }
+        call.chunks = []; call.start = Date.now();
+        call.rec.ondataavailable = e => call.chunks.push(e.data);
+        call.rec.start();
+        document.getElementById('call-talk').classList.add('recording');
+        callSetStatus('聆听中…');
+    }).catch(err => { alert('无法访问麦克风: ' + err.message); });
+}
+function callStopRec() {
+    const btn = document.getElementById('call-talk'); if (btn) btn.classList.remove('recording');
+    if (!call.rec || call.rec.state === 'inactive') return;
+    if (Date.now() - (call.start || 0) < 400) {
+        try { call.rec.stop(); } catch (e) {}
+        if (call.stream) call.stream.getTracks().forEach(t => t.stop());
+        callSetStatus('通话中·按住说话'); return;
+    }
+    call.rec.stop();
+    call.rec.onstop = async () => {
+        const mime = call.rec.mimeType || 'audio/webm';
+        const blob = new Blob(call.chunks, { type: mime });
+        if (call.stream) call.stream.getTracks().forEach(t => t.stop());
+        callSetStatus('识别中…');
+        const fd = new FormData();
+        let ext = '.webm'; if (mime.includes('mp4')) ext = '.mp4'; else if (mime.includes('wav')) ext = '.wav';
+        fd.append('audio', blob, 'call' + ext);
+        try {
+            const res = await fetch('/api/voice_to_text', { method: 'POST', body: fd });
+            const data = await res.json();
+            if (!call.active) return;
+            if (data.ok && data.text) {
+                call.history.push({ from: 'user', text: data.text });
+                callAddLine('me', data.text);
+                callReply(false, data.text);
+            } else { callSetStatus('没听清，再按住说一次'); }
+        } catch (e) { callSetStatus('识别失败，再试一次'); }
+    };
+}
+function endCall() {
+    call.active = false;
+    if (call.timer) clearInterval(call.timer);
+    try { if (call.rec && call.rec.state !== 'inactive') call.rec.stop(); } catch (e) {}
+    if (call.stream) call.stream.getTracks().forEach(t => t.stop());
+    document.getElementById('call-overlay').classList.remove('open');
+}
+
 function toggleLike(momentId) {
     const card = document.querySelector(`[data-moment-id="${momentId}"]`);
     if (!card) return;
@@ -2990,6 +3140,19 @@ document.querySelectorAll('.dm-upload-file').forEach(input => {
         });
     });
 </script>
+
+<!-- ══ 实时语音通话 ══════════════════════════════════════ -->
+<div id="call-overlay">
+  <div class="call-avatar" id="call-avatar"></div>
+  <div class="call-name" id="call-name"></div>
+  <div class="call-status" id="call-status">正在接通…</div>
+  <div class="call-timer" id="call-timer">00:00</div>
+  <div class="call-transcript" id="call-transcript"></div>
+  <div class="call-controls">
+    <button class="call-talk" id="call-talk">按住<br>说话</button>
+    <button class="call-end" id="call-end" onclick="endCall()" title="挂断"><svg viewBox="0 0 24 24"><path d="M10.68 13.31a16 16 0 0 0 3.41 2.6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7 2 2 0 0 1 1.72 2v3a2 2 0 0 1-2.18 2A19.79 19.79 0 0 1 3.07 4.18 2 2 0 0 1 5 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91"/><line x1="23" y1="1" x2="1" y2="23"/></svg></button>
+  </div>
+</div>
 
 <!-- ══ 发朋友圈 弹窗 ══════════════════════════════════════ -->
 <div id="compose-overlay" onclick="if(event.target===this) closeCompose()">

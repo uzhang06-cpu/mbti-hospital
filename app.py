@@ -1699,6 +1699,52 @@ def proactive_talker_thread():
             time.sleep(120)
 
 
+@app.route("/api/call/reply", methods=["POST"])
+def call_reply():
+    """实时语音通话：接收我说的话（已转文字）+ 简短通话历史，返回角色的口语回复文字 + 语音。"""
+    user = _require_auth()
+    if not user: return jsonify({"error": "未登录"}), 401
+    data = request.get_json(force=True) or {}
+    role = data.get("role")
+    text = (data.get("text") or "").strip()
+    greeting = bool(data.get("greeting"))
+    if role not in PERSONA_BASE:
+        return jsonify({"ok": False, "error": "角色不存在"}), 400
+    if not text and not greeting:
+        return jsonify({"ok": False, "error": "没有内容"}), 400
+
+    hist = data.get("history") or []
+    convo = ""
+    for h in hist[-6:]:
+        who = "我" if h.get("from") == "user" else ROLE_NAME.get(role, role)
+        convo += f"{who}：{h.get('text','')}\n"
+
+    sys_prompt = (PERSONA_BASE[role] + "\n\n"
+                  "现在你正在和『我』语音通话。像真人打电话一样说话：口语、简短、自然，"
+                  "一次只说一两句话，别念标点符号、别写括号动作或旁白、别分点罗列、别升华总结。")
+    if greeting:
+        user_prompt = "电话刚接通，你先开口打个招呼（一句话，像平时接起朋友电话那样）。"
+    else:
+        user_prompt = f"通话记录：\n{convo}\n我刚说：「{text}」\n用一两句话自然地回我。"
+
+    try:
+        reply = call_llm(role, messages=[{"role": "user", "content": user_prompt}],
+                         system_prompt=sys_prompt, max_tokens=120, temperature=0.9)
+        reply = clean_raw(role, reply)
+        reply = extract_image(reply)[1].replace("[VOICE]", "").strip()
+    except Exception as e:
+        print(f"[Call] LLM 异常: {e}", flush=True)
+        return jsonify({"ok": False, "error": "生成失败"}), 500
+
+    audio = ""
+    if reply:
+        try:
+            audio = generate_audio_url(reply[:80], role)
+        except Exception as e:
+            print(f"[Call] TTS 异常: {e}", flush=True)
+    return jsonify({"ok": True, "text": reply, "audio": audio})
+
+
 @app.route("/api/upload_image", methods=["POST"])
 def upload_image():
     if 'image' not in request.files:
