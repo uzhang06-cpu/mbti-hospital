@@ -191,12 +191,12 @@ GROUP_BACKGROUND = (
 CUSTOM_CONFIG = {
     # trigger_prob 控制用户发消息时各角色响应概率，期望总人数约 2.2 人（真实群聊感）
     # group_interval 缩短：让主动破冰更活跃，不要让用户等 10 分钟
-    "ENFP": {"temperature": 0.9, "max_tokens": 140, "trigger_prob": 0.85, "proactive_dm": 0.65, "group_interval": (15, 60)},
-    "INFP": {"temperature": 0.9, "max_tokens": 140, "trigger_prob": 0.60, "proactive_dm": 0.50, "group_interval": (30, 100)},
-    "ENTP": {"temperature": 0.95, "max_tokens": 140, "trigger_prob": 0.80, "proactive_dm": 0.60, "group_interval": (20, 80)},
-    "ENTJ": {"temperature": 0.85, "max_tokens": 140, "trigger_prob": 0.60, "proactive_dm": 0.50, "group_interval": (40, 120)},
-    "ESTJ": {"temperature": 0.85, "max_tokens": 140, "trigger_prob": 0.55, "proactive_dm": 0.40, "group_interval": (50, 150)},
-    "ENFJ": {"temperature": 0.9, "max_tokens": 140, "trigger_prob": 0.75, "proactive_dm": 0.70, "group_interval": (25, 90)},
+    "ENFP": {"temperature": 0.9, "max_tokens": 140, "trigger_prob": 0.85, "proactive_dm": 0.65, "group_interval": (180, 480)},
+    "INFP": {"temperature": 0.9, "max_tokens": 140, "trigger_prob": 0.60, "proactive_dm": 0.50, "group_interval": (300, 660)},
+    "ENTP": {"temperature": 0.95, "max_tokens": 140, "trigger_prob": 0.80, "proactive_dm": 0.60, "group_interval": (210, 540)},
+    "ENTJ": {"temperature": 0.85, "max_tokens": 140, "trigger_prob": 0.60, "proactive_dm": 0.50, "group_interval": (360, 780)},
+    "ESTJ": {"temperature": 0.85, "max_tokens": 140, "trigger_prob": 0.55, "proactive_dm": 0.40, "group_interval": (420, 900)},
+    "ENFJ": {"temperature": 0.9, "max_tokens": 140, "trigger_prob": 0.75, "proactive_dm": 0.70, "group_interval": (240, 600)},
     "global": {
         "share_prob": 0.35,
         "drift_prob": 0.25,
@@ -506,8 +506,8 @@ def split_bubbles(text):
 
 
 def sample_tokens():
-    """单条回复长度上限：多数短、偶尔长一点（不是硬顶，保留自然变化，别一棒子打死）。"""
-    return random.choices([45, 60, 75, 95, 130], weights=[26, 28, 22, 15, 9])[0]
+    """单条回复长度上限：多数很短、偶尔长一点（不是硬顶，保留自然变化）。"""
+    return random.choices([30, 45, 60, 80], weights=[30, 35, 22, 13])[0]
 
 def _sim(a, b):
     """字符三元组 Jaccard 相似度，用来识别车轱辘话。"""
@@ -1026,6 +1026,11 @@ def trigger_ai_reply(role, trigger_role, trigger_content, user_id, room, is_star
         mode = force_mode
     elif is_startup:
         mode = "share"
+    elif is_chain:
+        # 接龙基本顺着当前话题聊，只偶尔有人自然岔开——不再动辄各说各话
+        mode = "respond" if random.random() < 0.85 else "share"
+    elif trigger_role == "INFJ":
+        mode = "respond"   # 用户刚说话，必须接住，不许自己另起话题
     else:
         r = random.random(); mode = "share" if r < gcfg["share_prob"] else (
             "drift" if r < gcfg["share_prob"] + gcfg["drift_prob"] else "respond")
@@ -1047,6 +1052,7 @@ def trigger_ai_reply(role, trigger_role, trigger_content, user_id, room, is_star
 
         bubbles = split_bubbles(raw)
         bubbles = dedup_bubbles(bubbles, recent_group_texts(user_id))
+        bubbles = bubbles[:3]   # 硬上限：一次最多 3 条，避免一口气刷一屏
         merged = " ".join(bubbles) if bubbles else raw
 
         # 强制发图：用户要求发图但AI没输出[IMG:]时，用回复内容搜图
@@ -1671,7 +1677,7 @@ def proactive_talker_thread():
                 random.shuffle(all_roles)
                 for candidate in all_roles:
                     mn, mx = CUSTOM_CONFIG[candidate].get("group_interval", (60, 300))
-                    if silence > random.randint(mn, mx):
+                    if silence > random.randint(mn, mx) and random.random() < 0.4:
                         _c, _uid, _rm = candidate, uid, room
                         socketio.start_background_task(
                             lambda c=_c, u=_uid, r=_rm: trigger_ai_reply(c, "", "", u, r, is_startup=True)
@@ -1704,7 +1710,7 @@ def proactive_talker_thread():
                         socketio.start_background_task(_dm_break)
 
                 # 朋友圈
-                if random.random() < 0.10:
+                if random.random() < 0.05:
                     role = random.choice(all_roles)
                     socketio.start_background_task(create_single_moment, role, uid, room)
 
