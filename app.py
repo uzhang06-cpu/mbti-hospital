@@ -1709,8 +1709,8 @@ def proactive_talker_thread():
                                 print(f"DM Break failed: {e}")
                         socketio.start_background_task(_dm_break)
 
-                # 朋友圈
-                if random.random() < 0.05:
+                # 朋友圈：偶尔有人发一条（很克制，别刷屏；每60秒扫一次×0.4%≈平均几小时一条）
+                if random.random() < 0.004:
                     role = random.choice(all_roles)
                     socketio.start_background_task(create_single_moment, role, uid, room)
 
