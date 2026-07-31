@@ -1956,13 +1956,14 @@ def group_message(gid):
                "content": content, "created_at": str(now)}
     for m in g.get("members", []):
         socketio.emit("group_msg", payload, room=m)
-    # 群里的 AI 成员按概率接话（AI+真人混群）
+    # 群里的 AI 成员接话（AI+真人混群）
     ai_members = g.get("ai_members", [])
     if ai_members:
-        responders = [r for r in ai_members if random.random() < CUSTOM_CONFIG[r].get("trigger_prob", 0.5)]
-        random.shuffle(responders)
-        for r in responders[:2]:
-            socketio.start_background_task(_delayed_group_ai, gid, r, uname, content)
+        # 只先触发一个（加权挑），之后由它顺序接龙给下一个——这样后面的 AI 能看到前面说了啥、
+        # 顺着同一个话题接，而不是所有 AI 并行各自对着原消息各说各话
+        weights = [max(0.05, CUSTOM_CONFIG[r].get("trigger_prob", 0.5)) for r in ai_members]
+        first = random.choices(ai_members, weights=weights, k=1)[0]
+        socketio.start_background_task(_delayed_group_ai, gid, first, uname, content)
     return jsonify({"ok": True, "id": mid})
 
 
@@ -1986,8 +1987,10 @@ def trigger_group_ai_reply(gid, role, trigger_name, trigger_content, depth=0):
                   f"你在一个微信群「{g.get('name','群聊')}」里，群里有真人朋友"
                   f"{('，还有其他 AI 朋友（'+others+'）' ) if others else ''}。\n"
                   f"当前时间：{_now_desc()}\n今天的你：{daily_state(gid, role)}\n\n{FORMAT_RULES}\n\n你平时打字大概这个感觉：{STYLE_VOICE[role]}")
-    user_prompt = (f"群里最近在聊：\n{convo}\n\n{trigger_name}刚说：「{trigger_content}」\n"
-                   "在群里随口接一两句就好：就回应刚才这句、别跑题、别一次发一大堆、别换好几个话题。没兴趣就只应一句或干脆别接。")
+    user_prompt = (f"这是群里最近的对话：\n{convo}\n\n"
+                   f"最新一条是{trigger_name}说的：「{trigger_content}」。\n"
+                   "顺着群里现在正在聊的这个话题往下接、直接回应上面的对话，像真的在群里聊天。"
+                   "别另起炉灶讲自己不相关的事、别跳话题、短短一两句就行；实在没什么可接的就附和一句。")
     try:
         resp = call_llm(role, messages=[{"role": "user", "content": user_prompt}],
                         max_tokens=random.choice([35, 45, 55, 65]), temperature=cfg["temperature"], system_prompt=sys_prompt)
@@ -2009,13 +2012,12 @@ def trigger_group_ai_reply(gid, role, trigger_name, trigger_content, depth=0):
                 socketio.emit("group_msg", payload, room=m)
             if i < len(bubbles) - 1:
                 socketio.sleep(random.uniform(0.4, 1.0))
-        # AI 之间接话（收敛：最多再拉一个，depth<1）
-        if depth < 1:
-            merged = " ".join(bubbles)
-            for other_role in g.get("ai_members", []):
-                if other_role != role and random.random() < 0.25:
-                    socketio.start_background_task(trigger_group_ai_reply, gid, other_role, ROLE_NAME[role], merged, depth + 1)
-                    break
+        # AI 顺序接龙：下一个 AI 会读到刚才这条、顺着同一话题接（收敛：最多到 depth 2）
+        if depth < 2:
+            others = [r for r in g.get("ai_members", []) if r != role]
+            if others and random.random() < (0.55 if depth == 0 else 0.3):
+                nxt = random.choice(others)
+                socketio.start_background_task(trigger_group_ai_reply, gid, nxt, ROLE_NAME[role], " ".join(bubbles), depth + 1)
     except Exception as e:
         print(f"[GroupAI] {e}", flush=True)
 
