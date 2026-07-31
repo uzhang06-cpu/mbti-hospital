@@ -1877,6 +1877,84 @@ def friend_message():
     return jsonify({"ok": True, "id": mid})
 
 
+# ══════════════════════════════════════════════════════════════
+#  真人群聊（Phase 3）
+# ══════════════════════════════════════════════════════════════
+def _group_member(db, gid, uid):
+    g = db["groups"].find_one({"id": gid})
+    return g if (g and uid in g.get("members", [])) else None
+
+@app.route("/api/groups/create", methods=["POST"])
+def group_create():
+    user = _require_auth()
+    if not user: return jsonify({"error": "未登录"}), 401
+    uid, uname = user["user_id"], user["username"]
+    data = request.get_json(force=True) or {}
+    name = (data.get("name") or "").strip() or "新群聊"
+    member_uids = data.get("member_uids") or []
+    db = get_mdb()
+    members = [uid]
+    for m in member_uids:
+        if m != uid and _are_friends(db, uid, m) and m not in members:
+            members.append(m)
+    gid, now = str(uuid.uuid4()), datetime.utcnow()
+    db["groups"].insert_one({"id": gid, "name": name, "owner_uid": uid,
+                             "members": members, "ai_members": [], "created_at": now})
+    for m in members:
+        if m != uid:
+            socketio.emit("group_invited", {"id": gid, "name": name}, room=m)
+    return jsonify({"ok": True, "id": gid, "name": name})
+
+
+@app.route("/api/groups", methods=["GET"])
+def groups_list():
+    user = _require_auth()
+    if not user: return jsonify({"error": "未登录"}), 401
+    uid = user["user_id"]; db = get_mdb()
+    out = []
+    for g in db["groups"].find({"members": uid}):
+        gid = g["id"]
+        last = db["group_messages"].find_one({"group_id": gid}, sort=[("created_at", -1)])
+        rd = db["group_reads"].find_one({"uid": uid, "group_id": gid})
+        last_read = rd["last_read"] if rd else datetime(2000, 1, 1)
+        unread = db["group_messages"].count_documents({"group_id": gid, "created_at": {"$gt": last_read}, "from_uid": {"$ne": uid}})
+        out.append({"id": gid, "name": g.get("name", "群聊"), "count": len(g.get("members", [])),
+                    "last": (last.get("content", "") if last else ""), "unread": unread})
+    return jsonify({"groups": out})
+
+
+@app.route("/api/groups/<gid>/history", methods=["GET"])
+def group_history(gid):
+    user = _require_auth()
+    if not user: return jsonify({"error": "未登录"}), 401
+    uid = user["user_id"]; db = get_mdb()
+    if not _group_member(db, gid, uid): return jsonify({"error": "非群成员"}), 403
+    rows = list(db["group_messages"].find({"group_id": gid}, sort=[("created_at", 1)]).limit(100))
+    db["group_reads"].update_one({"uid": uid, "group_id": gid}, {"$set": {"last_read": datetime.utcnow()}}, upsert=True)
+    return jsonify({"messages": [{"from_name": m.get("from_name", ""), "content": m.get("content", ""),
+                                  "mine": m.get("from_uid") == uid, "created_at": str(m.get("created_at", ""))} for m in rows]})
+
+
+@app.route("/api/groups/<gid>/message", methods=["POST"])
+def group_message(gid):
+    user = _require_auth()
+    if not user: return jsonify({"error": "未登录"}), 401
+    uid, uname = user["user_id"], user["username"]
+    content = ((request.get_json(force=True) or {}).get("content") or "").strip()
+    if not content: return jsonify({"ok": False, "error": "空消息"}), 400
+    db = get_mdb()
+    g = _group_member(db, gid, uid)
+    if not g: return jsonify({"ok": False, "error": "非群成员"}), 403
+    now, mid = datetime.utcnow(), str(uuid.uuid4())
+    db["group_messages"].insert_one({"id": mid, "group_id": gid, "from_uid": uid,
+                                     "from_name": uname, "content": content, "created_at": now})
+    payload = {"id": mid, "group_id": gid, "from_uid": uid, "from_name": uname,
+               "content": content, "created_at": str(now)}
+    for m in g.get("members", []):
+        socketio.emit("group_msg", payload, room=m)
+    return jsonify({"ok": True, "id": mid})
+
+
 @app.route("/api/upload_image", methods=["POST"])
 def upload_image():
     if 'image' not in request.files:

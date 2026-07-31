@@ -1335,6 +1335,11 @@ input[type=range]::-webkit-slider-thumb:hover { transform: scale(1.1); }
             </div>
             <div id="friend-requests"></div>
             <div id="friend-list"></div>
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-top:16px">
+                <div class="section-label" style="margin:0">群聊</div>
+                <button onclick="openGroupCreate()" style="background:transparent;border:1px solid var(--border2);color:var(--accent);border-radius:16px;padding:4px 12px;font-size:13px;cursor:pointer;font-family:inherit">＋ 建群</button>
+            </div>
+            <div id="group-list"></div>
         </div>
     </div>
 
@@ -1352,6 +1357,22 @@ input[type=range]::-webkit-slider-thumb:hover { transform: scale(1.1); }
         <div class="input-area">
             <div class="input-wrap"><input type="text" class="msg-input" id="friend-msg-input" placeholder="发消息…" onkeydown="if(event.key==='Enter')sendFriendMsg()"></div>
             <button class="send-btn" onclick="sendFriendMsg()"><svg class="ic" viewBox="0 0 24 24"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></svg></button>
+        </div>
+    </div>
+    <!-- 真人群聊 -->
+    <div class="panel" id="panel-group-chat">
+        <div class="chat-header">
+            <div class="chat-header-left">
+                <button class="icon-btn" onclick="openFriends()" title="返回" style="margin-right:2px"><svg class="ic" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg></button>
+                <div class="chat-header-avatar" style="background:linear-gradient(135deg,#4aa8ff,#0a6ae6);display:flex;align-items:center;justify-content:center"><svg viewBox="0 0 24 24" style="width:20px;height:20px;fill:none;stroke:#fff;stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>
+                <div><div class="chat-header-name" id="gc-name">群聊</div><div class="chat-header-sub" id="gc-sub">真人群</div></div>
+            </div>
+            <div class="chat-header-right"></div>
+        </div>
+        <div class="chat-window" id="gc-window"></div>
+        <div class="input-area">
+            <div class="input-wrap"><input type="text" class="msg-input" id="gc-input" placeholder="发消息…" onkeydown="if(event.key==='Enter')sendGroupChatMsg()"></div>
+            <button class="send-btn" onclick="sendGroupChatMsg()"><svg class="ic" viewBox="0 0 24 24"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></svg></button>
         </div>
     </div>
 
@@ -1795,6 +1816,7 @@ function frAva(name){ const n=(name||'?'); return `<div style="width:100%;height
 function openFriends(){ switchPanel('friends'); document.getElementById('nav-friends')?.classList.add('active'); loadFriendsHub(); }
 
 function loadFriendsHub(){
+    loadGroups();
     authFetch('/api/friends/requests').then(r=>r.json()).then(d=>{
         const box=document.getElementById('friend-requests'); if(!box) return;
         const reqs=(d&&d.requests)||[];
@@ -1858,8 +1880,76 @@ function sendFriendMsg(){
 }
 function updateFriendBadge(){
     const b=document.getElementById('badge-friends'); if(!b) return;
-    const unread=Object.values(friendUnread).reduce((a,c)=>a+(c||0),0);
-    const n=(window._frReqCount||0)+unread; b.textContent=n>0?n:'';
+    const fu=Object.values(friendUnread).reduce((a,c)=>a+(c||0),0);
+    const gu=Object.values(groupUnread).reduce((a,c)=>a+(c||0),0);
+    const n=(window._frReqCount||0)+fu+gu; b.textContent=n>0?n:'';
+}
+
+/* ── 真人群聊 (Phase 3) ── */
+let currentGroup = null;
+let groupUnread = {};
+window._groups = [];
+function loadGroups(){
+    authFetch('/api/groups').then(r=>r.json()).then(d=>{
+        const box=document.getElementById('group-list'); if(!box) return;
+        const gs=(d&&d.groups)||[]; window._groups=gs; groupUnread={};
+        gs.forEach(g=>groupUnread[g.id]=g.unread||0);
+        box.innerHTML = gs.length ? gs.map(g=>
+            `<div class="friend-row" onclick="openGroupChat('${g.id}')">
+                <div class="friend-ava" style="background:linear-gradient(135deg,#4aa8ff,#0a6ae6)"><svg viewBox="0 0 24 24" style="width:24px;height:24px;fill:none;stroke:#fff;stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>
+                <div style="flex:1;min-width:0"><div class="fr-name">${escapeHtml(g.name)} <span style="color:var(--text-muted);font-weight:400;font-size:12px">(${g.count})</span></div><div class="fr-last">${escapeHtml(g.last||'')}</div></div>
+                ${g.unread?`<span class="fr-badge">${g.unread}</span>`:''}
+            </div>`).join('') : '<div class="fr-last" style="padding:6px 4px">还没有群，点上面「建群」拉好友进来</div>';
+        updateFriendBadge();
+    }).catch(()=>{});
+}
+function openGroupCreate(){
+    const box=document.getElementById('group-member-pick'); const fs=window._friends||[];
+    box.innerHTML = fs.length ? fs.map(f=>
+        `<label style="display:flex;align-items:center;gap:10px;padding:8px 4px;cursor:pointer">
+            <input type="checkbox" value="${f.uid}" style="width:18px;height:18px">
+            <div class="friend-ava" style="width:34px;height:34px;font-size:14px;background:${frColor(f.name)}">${(f.name||'?').slice(0,1).toUpperCase()}</div>
+            <span class="fr-name">${escapeHtml(f.name)}</span>
+        </label>`).join('') : '<div class="fr-last">先加几个好友才能建群哦</div>';
+    document.getElementById('group-name-input').value='';
+    document.getElementById('group-modal').style.display='flex';
+}
+function closeGroupCreate(){ document.getElementById('group-modal').style.display='none'; }
+function createGroup(){
+    const name=(document.getElementById('group-name-input').value||'').trim();
+    const uids=Array.from(document.querySelectorAll('#group-member-pick input:checked')).map(c=>c.value);
+    if(!uids.length){ alert('至少选一个好友入群'); return; }
+    authFetch('/api/groups/create',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:name||'新群聊',member_uids:uids})})
+      .then(r=>r.json()).then(d=>{ if(d&&d.ok){ closeGroupCreate(); loadGroups(); openGroupChat(d.id,d.name); } else alert((d&&d.error)||'建群失败'); })
+      .catch(()=>alert('网络错误'));
+}
+function openGroupChat(gid,nameOpt){
+    const g=(window._groups||[]).find(x=>x.id===gid); const name=nameOpt||(g?g.name:'群聊');
+    currentGroup={id:gid,name};
+    document.getElementById('gc-name').textContent=name;
+    document.getElementById('gc-sub').textContent = g?(g.count+' 人'):'真人群';
+    const win=document.getElementById('gc-window'); win.innerHTML='';
+    switchPanel('group-chat'); document.getElementById('nav-friends')?.classList.add('active');
+    authFetch('/api/groups/'+gid+'/history').then(r=>r.json()).then(d=>{
+        ((d&&d.messages)||[]).forEach(m=>appendGCBubble(m.mine,m.from_name,m.content));
+        win.scrollTop=win.scrollHeight; groupUnread[gid]=0; updateFriendBadge();
+    }).catch(()=>{});
+    setTimeout(()=>{const i=document.getElementById('gc-input'); i&&i.focus();},60);
+}
+function appendGCBubble(mine,name,content){
+    const win=document.getElementById('gc-window'); if(!win) return;
+    const g=document.createElement('div'); g.className='msg-group'+(mine?' self':'');
+    const av=document.createElement('div'); av.className='msg-avatar'; av.innerHTML=mine?frAva('我'):frAva(name);
+    const col=document.createElement('div'); col.className='bubble-col';
+    if(!mine){ const s=document.createElement('div'); s.className='msg-sender'; s.textContent=name; col.appendChild(s); }
+    const b=document.createElement('div'); b.className='bubble no-anim'; b.textContent=content;
+    col.appendChild(b); g.appendChild(av); g.appendChild(col); win.appendChild(g); win.scrollTop=win.scrollHeight;
+}
+function sendGroupChatMsg(){
+    if(!currentGroup) return;
+    const inp=document.getElementById('gc-input'); const c=(inp.value||'').trim(); if(!c) return; inp.value='';
+    authFetch('/api/groups/'+currentGroup.id+'/message',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({content:c})})
+      .then(r=>r.json()).then(d=>{ if(d&&!d.ok) alert(d.error||'发送失败'); }).catch(()=>alert('网络错误'));
 }
 
 const dateStr = new Date().toLocaleString('zh-CN', { month:'long', day:'numeric', weekday:'short' });
@@ -2534,6 +2624,19 @@ socket.on('friend_msg', (m) => {
         friendUnread[other] = (friendUnread[other] || 0) + 1;
         updateFriendBadge();
         if (currentPanel === 'friends') loadFriendsHub();
+        playNotificationSound();
+    }
+});
+
+socket.on('group_invited', () => { if (currentPanel === 'friends') loadGroups(); playNotificationSound(); });
+socket.on('group_msg', (m) => {
+    const mine = m.from_uid === myUid();
+    if (currentPanel === 'group-chat' && currentGroup && m.group_id === currentGroup.id) {
+        appendGCBubble(mine, m.from_name, m.content);
+    } else if (!mine) {
+        groupUnread[m.group_id] = (groupUnread[m.group_id] || 0) + 1;
+        updateFriendBadge();
+        if (currentPanel === 'friends') loadGroups();
         playNotificationSound();
     }
 });
@@ -3335,6 +3438,25 @@ document.querySelectorAll('.dm-upload-file').forEach(input => {
   <div class="call-controls">
     <button class="call-talk" id="call-talk">按住<br>说话</button>
     <button class="call-end" id="call-end" onclick="endCall()" title="挂断"><svg viewBox="0 0 24 24"><path d="M10.68 13.31a16 16 0 0 0 3.41 2.6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7 2 2 0 0 1 1.72 2v3a2 2 0 0 1-2.18 2A19.79 19.79 0 0 1 3.07 4.18 2 2 0 0 1 5 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91"/><line x1="23" y1="1" x2="1" y2="23"/></svg></button>
+  </div>
+</div>
+
+<!-- ══ 建群 弹窗 ══════════════════════════════════════ -->
+<div id="group-modal" style="position:fixed;inset:0;z-index:130;background:rgba(0,0,0,0.4);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);display:none;align-items:center;justify-content:center">
+  <div style="width:400px;max-width:calc(100vw - 32px);max-height:86vh;background:var(--surface);border:1px solid var(--border);border-radius:18px;box-shadow:0 24px 70px rgba(0,0,0,0.28);display:flex;flex-direction:column;overflow:hidden">
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 18px;border-bottom:1px solid var(--border)">
+      <div style="font-size:16px;font-weight:650;color:var(--text)">建群</div>
+      <button class="icon-btn" onclick="closeGroupCreate()"><svg class="ic" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    </div>
+    <div style="padding:16px 18px;overflow-y:auto">
+      <input id="group-name-input" placeholder="群名称" style="width:100%;background:var(--bg2);border:1px solid var(--border2);border-radius:10px;padding:11px 14px;color:var(--text);outline:none;font-size:15px;font-family:inherit;margin-bottom:14px">
+      <div class="section-label" style="margin:0 0 4px">选好友入群</div>
+      <div id="group-member-pick"></div>
+    </div>
+    <div style="display:flex;justify-content:flex-end;gap:10px;padding:14px 18px;border-top:1px solid var(--border)">
+      <button onclick="closeGroupCreate()" style="background:transparent;color:var(--text-sub);border:1px solid var(--border2);border-radius:10px;padding:9px 16px;cursor:pointer;font-family:inherit">取消</button>
+      <button onclick="createGroup()" style="background:var(--accent);color:#fff;border:none;border-radius:10px;padding:9px 22px;font-weight:600;cursor:pointer;font-family:inherit">创建</button>
+    </div>
   </div>
 </div>
 
