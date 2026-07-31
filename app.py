@@ -1862,6 +1862,15 @@ threading.Thread(target=proactive_talker_thread, daemon=True).start()
 threading.Thread(target=memory_manager, daemon=True).start()
 threading.Thread(target=cleanup_temp_files, daemon=True).start()
 
+# 启动时后台按新人设生成 AI 头像（首次或缺图时；失败则保留旧图兜底）
+def _avatar_boot():
+    try:
+        from gen_avatars import ensure_avatars
+        ensure_avatars()
+    except Exception as e:
+        print(f"[Avatar] 启动生成失败: {e}", flush=True)
+threading.Thread(target=_avatar_boot, daemon=True).start()
+
 if __name__ == "__main__":
     port = int(os.getenv("PORT", 5001))
     socketio.run(app, debug=False, use_reloader=False, port=port, host='0.0.0.0')
