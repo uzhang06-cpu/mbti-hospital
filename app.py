@@ -190,19 +190,15 @@ GROUP_BACKGROUND = (
 CUSTOM_CONFIG = {
     # trigger_prob 控制用户发消息时各角色响应概率，期望总人数约 2.2 人（真实群聊感）
     # group_interval 缩短：让主动破冰更活跃，不要让用户等 10 分钟
-    "ENFP": {"temperature": 0.9, "max_tokens": 140, "trigger_prob": 0.85, "prompt_extra": "", "proactive_dm": 0.65, "group_interval": (15, 60)},
-    "INFP": {"temperature": 0.9, "max_tokens": 140, "trigger_prob": 0.60, "prompt_extra": "", "proactive_dm": 0.50, "group_interval": (30, 100)},
-    "ENTP": {"temperature": 0.95, "max_tokens": 140, "trigger_prob": 0.80, "prompt_extra": "", "proactive_dm": 0.60, "group_interval": (20, 80)},
-    "ENTJ": {"temperature": 0.85, "max_tokens": 140, "trigger_prob": 0.60, "prompt_extra": "", "proactive_dm": 0.50, "group_interval": (40, 120)},
-    "ESTJ": {"temperature": 0.85, "max_tokens": 140, "trigger_prob": 0.55, "prompt_extra": "", "proactive_dm": 0.40, "group_interval": (50, 150)},
-    "ENFJ": {"temperature": 0.9, "max_tokens": 140, "trigger_prob": 0.75, "prompt_extra": "", "proactive_dm": 0.70, "group_interval": (25, 90)},
+    "ENFP": {"temperature": 0.9, "max_tokens": 140, "trigger_prob": 0.85, "proactive_dm": 0.65, "group_interval": (15, 60)},
+    "INFP": {"temperature": 0.9, "max_tokens": 140, "trigger_prob": 0.60, "proactive_dm": 0.50, "group_interval": (30, 100)},
+    "ENTP": {"temperature": 0.95, "max_tokens": 140, "trigger_prob": 0.80, "proactive_dm": 0.60, "group_interval": (20, 80)},
+    "ENTJ": {"temperature": 0.85, "max_tokens": 140, "trigger_prob": 0.60, "proactive_dm": 0.50, "group_interval": (40, 120)},
+    "ESTJ": {"temperature": 0.85, "max_tokens": 140, "trigger_prob": 0.55, "proactive_dm": 0.40, "group_interval": (50, 150)},
+    "ENFJ": {"temperature": 0.9, "max_tokens": 140, "trigger_prob": 0.75, "proactive_dm": 0.70, "group_interval": (25, 90)},
     "global": {
         "share_prob": 0.35,
         "drift_prob": 0.25,
-        "chain_prob": 0.70,
-        "censor_entp": True,
-        "proactive_min": 8,
-        "proactive_max": 25,
         "max_tokens": 140,  # Global short message control（够说完一句，避免中途硬截断）
     }
 }
@@ -342,16 +338,6 @@ def decay_topic():
             TOPIC_STATE["age"] = 0
             TOPIC_STATE["owner"] = None
 
-def get_topic_context() -> str:
-    """给 prompt 提供话题参考"""
-    heat = TOPIC_STATE["heat"]
-    kws  = TOPIC_STATE["keywords"]
-    if heat > 0.6 and kws:
-        return f"群里现在正在热聊「{'、'.join(kws[:3])}」，话题很活跃。"
-    elif heat > 0.3 and kws:
-        return f"刚才大家聊了「{'、'.join(kws[:2])}」，话题稍微冷下来了。"
-    return ""
-
 # ── 角色兴趣关键词（触发更高参与度）────────────────────────────
 INTEREST_TRIGGERS = {
     "ENFP": {"kws": ["奶茶", "探店", "追剧", "猫", "好玩", "打卡", "旅游", "美食", "可爱", "哈哈"],       "boost": 0.35},
@@ -426,24 +412,6 @@ def get_relationship_hint(role: str, trigger_role: str) -> str:
     dyn = RELATIONSHIP_DYNAMICS.get((role, trigger_role))
     return f"提示：{dyn['hint']}" if dyn else ""
 
-TENSION = {
-    ("ENFP", "ENTP"): 0.0, ("INFP", "ENTP"): 0.0, ("ENTP", "ENFP"): 0.0,
-    ("ENTP", "INFP"): 0.0, ("ENFP", "INFP"): 0.0, ("INFP", "ENFP"): 0.0,
-    ("ENTJ", "ENTP"): 0.0, ("ENTP", "ENTJ"): 0.0, ("ENTJ", "ENFP"): 0.0,
-    ("ENFP", "ENTJ"): 0.0, ("ENTJ", "INFP"): 0.0, ("INFP", "ENTJ"): 0.0,
-    ("ESTJ", "ENFP"): 0.0, ("ENFP", "ESTJ"): 0.0, ("ESTJ", "INFP"): 0.0, ("INFP", "ESTJ"): 0.0,
-    ("ESTJ", "ENTP"): 0.0, ("ENTP", "ESTJ"): 0.0, ("ESTJ", "ENTJ"): 0.0, ("ENTJ", "ESTJ"): 0.0,
-    # ENFJ relationships (generally low tension)
-    ("ENFJ", "INFP"): 0.0, ("INFP", "ENFJ"): 0.0,
-    ("ENFJ", "ENTP"): 0.0, ("ENTP", "ENFJ"): 0.0,
-    ("ENFJ", "ENTJ"): 0.0, ("ENTJ", "ENFJ"): 0.0,
-    ("ENFJ", "ESTJ"): 0.0, ("ESTJ", "ENFJ"): 0.0,
-    ("ENFJ", "ENFP"): 0.0, ("ENFP", "ENFJ"): 0.0,
-}
-
-MEMORY_HIGHLIGHTS = []
-HIGHLIGHT_KEYWORDS = ["哈哈", "笑死", "绝了", "难过", "突然", "感觉", "好像", "草", "有意思"]
-MAX_HIGHLIGHTS = 8
 
 # 全局状态锁
 state_lock = threading.Lock()
@@ -475,39 +443,6 @@ def update_mood(role, event):
         ROLE_STATE[role]["mood_score"] = max(0.10, min(0.95, old * 0.72 + (old + delta) * 0.28))
 
 
-def decay_tension():
-    with state_lock:
-        for k in TENSION: TENSION[k] = max(0.0, TENSION[k] * 0.88)
-
-
-def add_tension(fr, to, delta):
-    if (fr, to) in TENSION:
-        with state_lock:
-            TENSION[(fr, to)] = min(1.0, TENSION[(fr, to)] + delta)
-
-
-def get_tension_hint(role, trigger_role):
-    with state_lock:
-        t = TENSION.get((role, trigger_role), 0)
-    if t < 0.4: return ""
-    return f"提示：你最近对{ROLE_NAME.get(trigger_role, '')}有点烦，语气上自然带一点出来。"
-
-
-def try_add_highlight(role, content):
-    if len(content) >= 5 and any(kw in content for kw in HIGHLIGHT_KEYWORDS):
-        with state_lock:
-            MEMORY_HIGHLIGHTS.append({"name": ROLE_NAME.get(role, role), "content": content[:30]})
-            if len(MEMORY_HIGHLIGHTS) > MAX_HIGHLIGHTS: MEMORY_HIGHLIGHTS.pop(0)
-
-
-def get_callback_hint():
-    with state_lock:
-        if not MEMORY_HIGHLIGHTS or random.random() > 0.18:
-            return ""
-        item = random.choice(MEMORY_HIGHLIGHTS)
-    return f"提示：可以自然带一句之前{item['name']}说的「{item['content']}」。"
-
-
 def get_streak_delay(role):
     s = ROLE_STATE[role]["consecutive"]
     if s <= 1: return 0
@@ -534,8 +469,6 @@ def clean_raw(role, text):
         "⏩-⏳⏸-⏺Ⓜ▪▫▶◀◻-◾]"
     )
     text = emoji_pattern.sub('', text)
-    if role == "ENTP" and CUSTOM_CONFIG["global"].get("censor_entp", True):
-        for w in ["死", "垃圾", "废物", "傻逼", "弱智"]: text = text.replace(w, "**")
     return text.strip()
 
 
@@ -865,16 +798,10 @@ def _now_desc() -> str:
 def make_prompt(role, mode, user_id, life_event="", is_chain=False, trigger_role="", trigger_content=""):
     now_hour = datetime.now().hour
     night = "\n提示：现在是深夜，可以说一些平时不太说的话。" if role == "INFP" and (now_hour >= 23 or now_hour <= 4) else ""
-    persona = PERSONA_BASE[role] + (
-        f"\n额外补充：{CUSTOM_CONFIG[role]['prompt_extra']}" if CUSTOM_CONFIG[role].get("prompt_extra") else "")
+    persona = PERSONA_BASE[role]
     state = f"当前时间：{_now_desc()}\n当前状态：{mood_to_desc(role)}"
-    th, cb = get_tension_hint(role, trigger_role if is_chain else ""), get_callback_hint()
-    if th: state += f"\n{th}"
-    if cb: state += f"\n{cb}"
     rh = get_relationship_hint(role, trigger_role) if is_chain and trigger_role else ""
     if rh: state += f"\n{rh}"
-    topic_ctx = get_topic_context()
-    if topic_ctx: state += f"\n{topic_ctx}"
     history  = build_history(user_id)
     cross_mem = build_cross_memory(role, user_id)
     summaries = build_memory_summaries(user_id)
@@ -904,14 +831,12 @@ def make_prompt(role, mode, user_id, life_event="", is_chain=False, trigger_role
     elif mode == "share":
         task = f"不管前面在聊什么，你突然想说一件事：「{life_event}」\n用你的风格发出来。"
         if random.random() < 0.20: task += " 顺便发一张图，请加上 [IMG: 画面描述]"
-    elif mode == "respond":
+    else:
         if trigger_role == "INFJ" and trigger_content:
             task = f"INFJ（我）刚在群里说：「{trigger_content}」\n可以顺着这句聊，也可以只挑你感兴趣的点接一句，不用硬凑、不用面面俱到。"
             if "照片" in trigger_content or "图" in trigger_content: task += " 用户要图，请必须输出 [IMG: 画面描述]"
         else:
-            task = "看上面的群聊记录，找一个让你有反应的地方给出本能吐槽。"
-    else:
-        task = "从聊天记录或潜意识记忆里找一个细节，联想到你自己的经历，把话题带偏。"
+            task = "看上面的群聊记录，找一个你有感觉的地方，自然参与进去。"
 
     system_prompt = f"{persona}{night}\n\n群聊背景：\n{GROUP_BACKGROUND}\n\n{state}\n\n{FORMAT_RULES}"
     user_prompt = f"{cross_mem}\n\n最近一周群聊记忆摘要：\n{summaries}\n\n最近群聊记录（30条）：\n{history}\n\n现在的事情：\n{task}"
@@ -919,8 +844,7 @@ def make_prompt(role, mode, user_id, life_event="", is_chain=False, trigger_role
 
 
 def make_dm_prompt(role, user_content, user_id):
-    persona = PERSONA_BASE[role] + (
-        f"\n额外补充：{CUSTOM_CONFIG[role]['prompt_extra']}" if CUSTOM_CONFIG[role].get("prompt_extra") else "")
+    persona = PERSONA_BASE[role]
     history   = build_dm_history(role, user_id)
     cross_mem = build_cross_memory(role, user_id)
     img_hint = " 用户要图，请必须输出 [IMG: 画面描述]" if "照片" in user_content or "图" in user_content else (
@@ -1000,8 +924,6 @@ def create_single_moment(role, user_id, room):
         img_desc, content = extract_image(content)
         img_url   = search_image_url(img_desc, role) if img_desc else ""
         audio_url = ""
-        if random.random() < 0.15:
-            audio_url = generate_audio_url(content.replace("[VOICE]", "")[:60], role)
         content = content.replace("[VOICE]", "")
 
         now = datetime.utcnow()
@@ -1036,7 +958,6 @@ def trigger_ai_reply(role, trigger_role, trigger_content, user_id, room, is_star
             "drift" if r < gcfg["share_prob"] + gcfg["drift_prob"] else "respond")
 
     life_event = random.choice(LIFE_EVENTS[role]) if mode == "share" else ""
-    decay_tension()
 
     try:
         sys_prompt, user_task = make_prompt(role, mode, user_id, life_event, is_chain=is_chain,
@@ -1099,9 +1020,7 @@ def trigger_ai_reply(role, trigger_role, trigger_content, user_id, room, is_star
         with state_lock:
             ROLE_STATE[role]["last_spoke"] = datetime.now()
             ROLE_STATE[role]["consecutive"] += 1
-        try_add_highlight(role, merged)
 
-        if role == "ENTP" and trigger_role in ("ENFP", "INFP"): add_tension(trigger_role, "ENTP", 0.12)
         if trigger_role and trigger_role != "INFJ": update_mood(trigger_role, "got_response")
 
         for i, bubble in enumerate(bubbles):
@@ -1484,7 +1403,6 @@ def handle_msg(data):
         "user_id": user_id, "role": "INFJ",
         "content": content, "timestamp": datetime.utcnow()
     })
-    try_add_highlight("INFJ", content)
     update_topic(content, "INFJ")
     
     # Reset consecutive counters for AI
