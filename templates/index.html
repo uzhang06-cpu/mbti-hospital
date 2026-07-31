@@ -1020,7 +1020,10 @@ input[type=range]::-webkit-slider-thumb:hover { transform: scale(1.1); }
         <div id="app-sub">AI 多智能体模拟系统</div>
         <div id="user-bar" style="display:none;margin-top:10px;padding-top:10px;border-top:1px solid var(--border);align-items:center;justify-content:space-between">
             <span id="current-username" style="font-size:11px;color:var(--text-muted);font-weight:500"></span>
-            <button onclick="logout()" style="font-size:10.5px;padding:3px 10px;border:1px solid var(--border2);border-radius:7px;background:transparent;color:var(--text-muted);cursor:pointer;transition:all 0.15s" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--text-muted)'">退出</button>
+            <div style="display:flex;gap:6px">
+                <button onclick="resetMyData()" title="清空我的聊天记录与记忆" style="font-size:10.5px;padding:3px 10px;border:1px solid var(--border2);border-radius:7px;background:transparent;color:var(--text-muted);cursor:pointer;transition:all 0.15s" onmouseover="this.style.color='#ff3b30';this.style.borderColor='#ff3b30'" onmouseout="this.style.color='var(--text-muted)';this.style.borderColor='var(--border2)'">清空记录</button>
+                <button onclick="logout()" style="font-size:10.5px;padding:3px 10px;border:1px solid var(--border2);border-radius:7px;background:transparent;color:var(--text-muted);cursor:pointer;transition:all 0.15s" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--text-muted)'">退出</button>
+            </div>
         </div>
     </div>
     <div id="nav-list">
@@ -1614,6 +1617,17 @@ function logout() {
     localStorage.removeItem('mbti_token');
     localStorage.removeItem('mbti_username');
     location.reload();
+}
+
+function resetMyData() {
+    if (!confirm('确定清空你自己的全部聊天记录、私聊、朋友圈和记忆吗？\n账号会保留，但此操作不可撤销。')) return;
+    authFetch('/api/reset_my_data', { method: 'POST' })
+        .then(r => r.json())
+        .then(data => {
+            if (data && data.ok) { alert('已清空，马上刷新～'); location.reload(); }
+            else { alert((data && data.error) || '清空失败'); }
+        })
+        .catch(() => alert('网络错误，清空失败'));
 }
 
 /* ════════════════════════

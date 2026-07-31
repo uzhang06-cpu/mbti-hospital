@@ -1234,6 +1234,24 @@ def index(): return render_template("index.html")
 def health(): return jsonify({"status": "ok"}), 200
 
 
+@app.route("/api/reset_my_data", methods=["POST"])
+def reset_my_data():
+    """清空当前登录用户自己的聊天记录/私聊/朋友圈/评论/记忆（保留账号）。"""
+    user = _require_auth()
+    if not user:
+        return jsonify({"error": "未登录"}), 401
+    uid = user["user_id"]
+    db = get_mdb()
+    deleted = {}
+    for c in ["messages", "dm_messages", "moments", "comments", "summaries"]:
+        try:
+            deleted[c] = db[c].delete_many({"user_id": uid}).deleted_count
+        except Exception:
+            deleted[c] = 0
+    print(f"[Reset] user {uid} cleared: {deleted}", flush=True)
+    return jsonify({"ok": True, "deleted": deleted})
+
+
 @app.route("/api/config", methods=["GET"])
 def get_config(): return jsonify({"config": CUSTOM_CONFIG, "persona_base": PERSONA_BASE})
 
