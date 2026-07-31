@@ -710,6 +710,17 @@ body.dark .moment-card:hover { box-shadow: 0 6px 24px rgba(0,0,0,0.4); }
 .call-end svg { width: 26px; height: 26px; fill: none; stroke: #fff; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 .call-end:hover { background: #e0352b; }
 
+/* ── 真人好友 ── */
+.section-label { font-size: 12px; color: var(--text-muted); font-weight: 600; margin: 12px 4px 4px; }
+.friend-row { display: flex; align-items: center; gap: 12px; padding: 10px 6px; cursor: pointer; border-radius: 12px; transition: background 0.14s; }
+.friend-row:hover { background: rgba(120,120,130,0.1); }
+.friend-ava { width: 44px; height: 44px; border-radius: 50%; flex-shrink: 0; display: flex; align-items: center; justify-content: center; color: #fff; font-weight: 600; font-size: 17px; overflow: hidden; }
+.friend-row .fr-name { font-size: 15px; font-weight: 500; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.friend-row .fr-last { font-size: 12.5px; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 2px; }
+.fr-badge { min-width: 18px; height: 18px; background: #ff3b30; color: #fff; border-radius: 9px; font-size: 11px; font-weight: 600; display: flex; align-items: center; justify-content: center; padding: 0 5px; flex-shrink: 0; }
+.req-row { display: flex; align-items: center; gap: 8px; padding: 10px 4px; border-bottom: 1px solid var(--border); }
+.req-row .rq-btn { border: none; border-radius: 16px; padding: 5px 13px; font-size: 13px; cursor: pointer; flex-shrink: 0; }
+
 .moment-actions { display: flex; align-items: center; gap: 8px; padding-top: 12px; border-top: 1px solid var(--border); }
 .action-btn {
     display: flex; align-items: center; gap: 6px;
@@ -1105,6 +1116,19 @@ input[type=range]::-webkit-slider-thumb:hover { transform: scale(1.1); }
                 <div class="nav-preview">查看大家的动态</div>
             </div>
         </div>
+
+        <div class="nav-divider"></div>
+
+        <div class="nav-item" onclick="openFriends()" id="nav-friends">
+            <div class="nav-avatar" id="nav-av-friends" style="background:linear-gradient(135deg,#4aa8ff,#0a6ae6);display:flex;align-items:center;justify-content:center">
+                <svg viewBox="0 0 24 24" style="width:22px;height:22px;fill:none;stroke:#fff;stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+            </div>
+            <div class="nav-info">
+                <div class="nav-name">好友</div>
+                <div class="nav-preview">加真人好友 · 一对一聊天</div>
+            </div>
+            <span class="nav-badge" id="badge-friends"></span>
+        </div>
     </div>
 </div>
 
@@ -1293,6 +1317,41 @@ input[type=range]::-webkit-slider-thumb:hover { transform: scale(1.1); }
                     <div>还没有动态，点击右上角刷新</div>
                 </div>
             </div>
+        </div>
+    </div>
+
+    <!-- 好友中心 -->
+    <div class="panel" id="panel-friends">
+        <div class="chat-header">
+            <div class="chat-header-left">
+                <div><div class="chat-header-name">好友</div><div class="chat-header-sub">加真人好友，一对一聊天</div></div>
+            </div>
+            <div class="chat-header-right"><button class="icon-btn" onclick="openSidebar()" title="菜单" id="ham-friends" style="display:none"><svg class="ic" viewBox="0 0 24 24"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg></button></div>
+        </div>
+        <div class="chat-window" id="friends-hub" style="padding:16px">
+            <div style="display:flex;gap:8px;margin-bottom:6px">
+                <input id="add-friend-input" type="text" placeholder="输入对方用户名加好友" onkeydown="if(event.key==='Enter')addFriend()" style="flex:1;background:var(--bg);border:1px solid var(--border2);border-radius:20px;padding:9px 15px;color:var(--text);outline:none;font-size:14px;font-family:inherit">
+                <button onclick="addFriend()" style="flex-shrink:0;background:var(--accent);color:#fff;border:none;border-radius:20px;padding:0 18px;font-size:14px;font-weight:600;cursor:pointer">加好友</button>
+            </div>
+            <div id="friend-requests"></div>
+            <div id="friend-list"></div>
+        </div>
+    </div>
+
+    <!-- 与某个好友的聊天 -->
+    <div class="panel" id="panel-friend">
+        <div class="chat-header">
+            <div class="chat-header-left">
+                <button class="icon-btn" onclick="openFriends()" title="返回" style="margin-right:2px"><svg class="ic" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg></button>
+                <div class="chat-header-avatar" id="friend-chat-avatar"></div>
+                <div><div class="chat-header-name" id="friend-chat-name">好友</div><div class="chat-header-sub">真人 · 聊天</div></div>
+            </div>
+            <div class="chat-header-right"></div>
+        </div>
+        <div class="chat-window" id="friend-chat-window"></div>
+        <div class="input-area">
+            <div class="input-wrap"><input type="text" class="msg-input" id="friend-msg-input" placeholder="发消息…" onkeydown="if(event.key==='Enter')sendFriendMsg()"></div>
+            <button class="send-btn" onclick="sendFriendMsg()"><svg class="ic" viewBox="0 0 24 24"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></svg></button>
         </div>
     </div>
 
@@ -1722,6 +1781,85 @@ function switchPanel(name) {
     document.getElementById('panel-' + name)?.classList.add('active');
     document.getElementById('nav-' + name)?.classList.add('active');
     currentPanel = name; unreadCounts[name] = 0; updateBadge(name);
+}
+
+/* ════════════════════════ 真人好友 (Phase 1) ════════════════════════ */
+let currentFriend = null;
+let friendUnread = {};        // uid -> 未读数
+window._frReqCount = 0;
+window._friends = [];
+function myUid(){ try{ const t=localStorage.getItem('mbti_token')||''; return JSON.parse(atob(t.split('.')[1].replace(/-/g,'+').replace(/_/g,'/'))).user_id; }catch(e){ return ''; } }
+function frColor(name){ let h=0; for(const c of (name||'?')) h=(h*31+c.charCodeAt(0))>>>0; const cs=['#e08a3c','#3a9fd6','#9d6fd0','#dd5757','#17a89f','#d9a11f','#22a877','#0a84ff']; return cs[h%cs.length]; }
+function frAva(name){ const n=(name||'?'); return `<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:${frColor(n)};color:#fff;font-weight:600">${n.slice(0,1).toUpperCase()}</div>`; }
+
+function openFriends(){ switchPanel('friends'); document.getElementById('nav-friends')?.classList.add('active'); loadFriendsHub(); }
+
+function loadFriendsHub(){
+    authFetch('/api/friends/requests').then(r=>r.json()).then(d=>{
+        const box=document.getElementById('friend-requests'); if(!box) return;
+        const reqs=(d&&d.requests)||[];
+        box.innerHTML = reqs.length ? ('<div class="section-label">好友申请</div>'+reqs.map(r=>
+            `<div class="req-row"><div class="friend-ava" style="width:38px;height:38px;font-size:15px;background:${frColor(r.from_name)}">${(r.from_name||'?').slice(0,1).toUpperCase()}</div>
+             <div style="flex:1;min-width:0"><div class="fr-name">${escapeHtml(r.from_name)}</div><div class="fr-last">请求加你为好友</div></div>
+             <button class="rq-btn" style="background:var(--accent);color:#fff" onclick="respondReq('${r.id}',true)">接受</button>
+             <button class="rq-btn" style="background:transparent;color:var(--text-sub);border:1px solid var(--border2)" onclick="respondReq('${r.id}',false)">拒绝</button></div>`).join('')) : '';
+        window._frReqCount=reqs.length; updateFriendBadge();
+    }).catch(()=>{});
+    authFetch('/api/friends').then(r=>r.json()).then(d=>{
+        const box=document.getElementById('friend-list'); if(!box) return;
+        const fs=(d&&d.friends)||[]; window._friends=fs; friendUnread={};
+        fs.forEach(f=>friendUnread[f.uid]=f.unread||0);
+        box.innerHTML='<div class="section-label">好友</div>'+(fs.length?fs.map(f=>
+            `<div class="friend-row" onclick="openFriendChat('${f.uid}')">
+                <div class="friend-ava" style="background:${frColor(f.name)}">${(f.name||'?').slice(0,1).toUpperCase()}</div>
+                <div style="flex:1;min-width:0"><div class="fr-name">${escapeHtml(f.name)}</div><div class="fr-last">${escapeHtml(f.last||'')}</div></div>
+                ${f.unread?`<span class="fr-badge">${f.unread}</span>`:''}
+            </div>`).join(''):'<div class="fr-last" style="padding:10px 4px">还没有好友，上面输对方用户名加一个吧</div>');
+        updateFriendBadge();
+    }).catch(()=>{});
+}
+function addFriend(){
+    const inp=document.getElementById('add-friend-input'); const name=(inp.value||'').trim(); if(!name) return;
+    authFetch('/api/friends/request',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username:name})})
+      .then(r=>r.json()).then(d=>{ if(d&&d.ok){ inp.value=''; alert(d.auto?'你俩互相加过，直接成为好友啦':'好友申请已发送'); loadFriendsHub(); } else alert((d&&d.error)||'失败'); })
+      .catch(()=>alert('网络错误'));
+}
+function respondReq(id,accept){
+    authFetch('/api/friends/respond',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({request_id:id,accept:accept})})
+      .then(r=>r.json()).then(()=>loadFriendsHub()).catch(()=>{});
+}
+function openFriendChat(uid){
+    const f=(window._friends||[]).find(x=>x.uid===uid); const name=f?f.name:'好友';
+    currentFriend={uid,name};
+    document.getElementById('friend-chat-name').textContent=name;
+    document.getElementById('friend-chat-avatar').innerHTML=frAva(name);
+    const win=document.getElementById('friend-chat-window'); win.innerHTML='';
+    switchPanel('friend'); document.getElementById('nav-friends')?.classList.add('active');
+    authFetch('/api/friends/history/'+uid).then(r=>r.json()).then(d=>{
+        ((d&&d.messages)||[]).forEach(m=>appendFriendBubble(m.mine,m.content));
+        win.scrollTop=win.scrollHeight; friendUnread[uid]=0; updateFriendBadge();
+    }).catch(()=>{});
+    setTimeout(()=>{const i=document.getElementById('friend-msg-input'); i&&i.focus();},60);
+}
+function appendFriendBubble(mine,content){
+    const win=document.getElementById('friend-chat-window'); if(!win) return;
+    const g=document.createElement('div'); g.className='msg-group'+(mine?' self':'');
+    const av=document.createElement('div'); av.className='msg-avatar'; av.innerHTML=mine?frAva('我'):frAva(currentFriend?currentFriend.name:'?');
+    const col=document.createElement('div'); col.className='bubble-col';
+    const b=document.createElement('div'); b.className='bubble no-anim'; b.textContent=content;
+    col.appendChild(b); g.appendChild(av); g.appendChild(col); win.appendChild(g); win.scrollTop=win.scrollHeight;
+}
+function sendFriendMsg(){
+    if(!currentFriend) return;
+    const inp=document.getElementById('friend-msg-input'); const content=(inp.value||'').trim(); if(!content) return;
+    inp.value='';
+    authFetch('/api/friends/message',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({to_uid:currentFriend.uid,content:content})})
+      .then(r=>r.json()).then(d=>{ if(d&&!d.ok) alert(d.error||'发送失败'); }).catch(()=>alert('网络错误'));
+}
+function updateFriendBadge(){
+    const b=document.getElementById('badge-friends'); if(!b) return;
+    const unread=Object.values(friendUnread).reduce((a,c)=>a+(c||0),0);
+    const n=(window._frReqCount||0)+unread; b.textContent=n>0?n:'';
 }
 
 const dateStr = new Date().toLocaleString('zh-CN', { month:'long', day:'numeric', weekday:'short' });
@@ -2377,6 +2515,26 @@ socket.on('moment_update', (data) => {
         moment.likes = data.likes;
         moment.liked_by_user = data.liked_by_user;
         renderMoments();
+    }
+});
+
+socket.on('friend_request', (r) => {
+    window._frReqCount = (window._frReqCount || 0) + 1;
+    updateFriendBadge();
+    if (currentPanel === 'friends') loadFriendsHub();
+    playNotificationSound();
+});
+socket.on('friend_accepted', () => { if (currentPanel === 'friends') loadFriendsHub(); });
+socket.on('friend_msg', (m) => {
+    const mine = m.from_uid === myUid();
+    const other = mine ? m.to_uid : m.from_uid;
+    if (currentPanel === 'friend' && currentFriend && other === currentFriend.uid) {
+        appendFriendBubble(mine, m.content);
+    } else if (!mine) {
+        friendUnread[other] = (friendUnread[other] || 0) + 1;
+        updateFriendBadge();
+        if (currentPanel === 'friends') loadFriendsHub();
+        playNotificationSound();
     }
 });
 

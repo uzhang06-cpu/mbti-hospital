@@ -1721,6 +1721,125 @@ def call_reply():
     return jsonify({"ok": True, "text": reply, "audio": audio})
 
 
+# ══════════════════════════════════════════════════════════════
+#  真人好友系统 + 真人私聊（Phase 1）
+# ══════════════════════════════════════════════════════════════
+def _conv_id(a, b):
+    return "__".join(sorted([a, b]))
+
+def _are_friends(db, a, b):
+    return db["friendships"].find_one({"uid": a, "friend_uid": b}) is not None
+
+def _add_friendship(db, a, aname, b, bname):
+    now = datetime.utcnow()
+    for x, xn, y, yn in [(a, aname, b, bname), (b, bname, a, aname)]:
+        if not db["friendships"].find_one({"uid": x, "friend_uid": y}):
+            db["friendships"].insert_one({"uid": x, "friend_uid": y, "friend_name": yn, "created_at": now})
+
+
+@app.route("/api/friends", methods=["GET"])
+def list_friends():
+    user = _require_auth()
+    if not user: return jsonify({"error": "未登录"}), 401
+    uid = user["user_id"]; db = get_mdb()
+    out = []
+    for f in db["friendships"].find({"uid": uid}):
+        fid = f["friend_uid"]; conv = _conv_id(uid, fid)
+        last = db["user_messages"].find_one({"conv": conv}, sort=[("created_at", -1)])
+        unread = db["user_messages"].count_documents({"conv": conv, "to_uid": uid, "from_uid": fid, "read": False})
+        out.append({"uid": fid, "name": f.get("friend_name", fid),
+                    "last": (last.get("content", "") if last else ""), "unread": unread})
+    return jsonify({"friends": out})
+
+
+@app.route("/api/friends/request", methods=["POST"])
+def friend_request():
+    user = _require_auth()
+    if not user: return jsonify({"error": "未登录"}), 401
+    uid, uname = user["user_id"], user["username"]
+    target_name = ((request.get_json(force=True) or {}).get("username") or "").strip()
+    if not target_name: return jsonify({"ok": False, "error": "请输入用户名"}), 400
+    db = get_mdb()
+    target = db["users"].find_one({"username": target_name})
+    if not target: return jsonify({"ok": False, "error": "查无此人"}), 404
+    tuid = str(target["_id"])
+    if tuid == uid: return jsonify({"ok": False, "error": "不能加自己"}), 400
+    if _are_friends(db, uid, tuid): return jsonify({"ok": False, "error": "你们已经是好友了"}), 400
+    if db["friend_requests"].find_one({"from_uid": uid, "to_uid": tuid, "status": "pending"}):
+        return jsonify({"ok": False, "error": "已发送申请，等对方通过"}), 400
+    now = datetime.utcnow()
+    reverse = db["friend_requests"].find_one({"from_uid": tuid, "to_uid": uid, "status": "pending"})
+    if reverse:  # 对方早就申请过我 → 直接成为好友
+        db["friend_requests"].update_one({"_id": reverse["_id"]}, {"$set": {"status": "accepted"}})
+        _add_friendship(db, uid, uname, tuid, target_name)
+        socketio.emit("friend_accepted", {"uid": uid, "name": uname}, room=tuid)
+        return jsonify({"ok": True, "auto": True})
+    rid = str(uuid.uuid4())
+    db["friend_requests"].insert_one({"id": rid, "from_uid": uid, "from_name": uname,
+                                      "to_uid": tuid, "to_name": target_name, "status": "pending", "created_at": now})
+    socketio.emit("friend_request", {"id": rid, "from_uid": uid, "from_name": uname}, room=tuid)
+    return jsonify({"ok": True})
+
+
+@app.route("/api/friends/requests", methods=["GET"])
+def friend_requests_list():
+    user = _require_auth()
+    if not user: return jsonify({"error": "未登录"}), 401
+    uid = user["user_id"]; db = get_mdb()
+    rows = list(db["friend_requests"].find({"to_uid": uid, "status": "pending"}, sort=[("created_at", -1)]))
+    return jsonify({"requests": [{"id": r["id"], "from_uid": r["from_uid"], "from_name": r.get("from_name", "")} for r in rows]})
+
+
+@app.route("/api/friends/respond", methods=["POST"])
+def friend_respond():
+    user = _require_auth()
+    if not user: return jsonify({"error": "未登录"}), 401
+    uid, uname = user["user_id"], user["username"]
+    data = request.get_json(force=True) or {}
+    rid, accept = data.get("request_id"), bool(data.get("accept"))
+    db = get_mdb()
+    req = db["friend_requests"].find_one({"id": rid, "to_uid": uid, "status": "pending"})
+    if not req: return jsonify({"ok": False, "error": "申请不存在或已处理"}), 404
+    if accept:
+        db["friend_requests"].update_one({"id": rid}, {"$set": {"status": "accepted"}})
+        _add_friendship(db, uid, uname, req["from_uid"], req.get("from_name", ""))
+        socketio.emit("friend_accepted", {"uid": uid, "name": uname}, room=req["from_uid"])
+    else:
+        db["friend_requests"].update_one({"id": rid}, {"$set": {"status": "rejected"}})
+    return jsonify({"ok": True})
+
+
+@app.route("/api/friends/history/<friend_uid>", methods=["GET"])
+def friend_history(friend_uid):
+    user = _require_auth()
+    if not user: return jsonify({"error": "未登录"}), 401
+    uid = user["user_id"]; db = get_mdb()
+    conv = _conv_id(uid, friend_uid)
+    rows = list(db["user_messages"].find({"conv": conv}, sort=[("created_at", 1)]).limit(80))
+    db["user_messages"].update_many({"conv": conv, "to_uid": uid, "read": False}, {"$set": {"read": True}})
+    return jsonify({"messages": [{"content": m.get("content", ""), "mine": m["from_uid"] == uid,
+                                  "created_at": str(m.get("created_at", ""))} for m in rows]})
+
+
+@app.route("/api/friends/message", methods=["POST"])
+def friend_message():
+    user = _require_auth()
+    if not user: return jsonify({"error": "未登录"}), 401
+    uid, uname = user["user_id"], user["username"]
+    data = request.get_json(force=True) or {}
+    to_uid, content = data.get("to_uid"), (data.get("content") or "").strip()
+    if not to_uid or not content: return jsonify({"ok": False, "error": "参数错误"}), 400
+    db = get_mdb()
+    if not _are_friends(db, uid, to_uid): return jsonify({"ok": False, "error": "对方不是你的好友"}), 403
+    now, mid = datetime.utcnow(), str(uuid.uuid4())
+    db["user_messages"].insert_one({"id": mid, "conv": _conv_id(uid, to_uid), "from_uid": uid, "from_name": uname,
+                                    "to_uid": to_uid, "content": content, "read": False, "created_at": now})
+    payload = {"id": mid, "from_uid": uid, "from_name": uname, "to_uid": to_uid, "content": content, "created_at": str(now)}
+    socketio.emit("friend_msg", payload, room=to_uid)
+    socketio.emit("friend_msg", payload, room=uid)
+    return jsonify({"ok": True, "id": mid})
+
+
 @app.route("/api/upload_image", methods=["POST"])
 def upload_image():
     if 'image' not in request.files:
