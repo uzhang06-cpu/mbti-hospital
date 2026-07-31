@@ -1,0 +1,14 @@
+{
+  "name": "MBTI 群聊实验室",
+  "short_name": "MBTI群聊",
+  "description": "AI 多智能体社交模拟",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#ffffff",
+  "theme_color": "#0a84ff",
+  "icons": [
+    { "src": "/static/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
+}
