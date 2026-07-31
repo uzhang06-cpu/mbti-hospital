@@ -473,7 +473,7 @@ def clean_raw(role, text):
 
 
 def split_bubbles(text):
-    parts = [b.strip() for b in text.split("|||") if b.strip()]
+    parts = [b.strip() for b in re.split(r"\|\|\||\n", text) if b.strip()]
     parts = [p for p in parts if re.search(r"[一-龥a-zA-Z0-9]", p)]
     return parts if parts else ([text.strip()] if re.search(r"[一-龥a-zA-Z0-9]", text) else [])
 
@@ -765,7 +765,7 @@ def build_dm_history(role, user_id, limit=20):
     rows.reverse()
     if not rows:
         return "（暂无私聊记录）"
-    name_map = {role: role, "INFJ": "我"}
+    name_map = {role: ROLE_NAME.get(role, role), "INFJ": "我"}
     lines = []
     prev_ts = None
     for m in rows:
@@ -994,7 +994,6 @@ def trigger_ai_reply(role, trigger_role, trigger_content, user_id, room, is_star
         force_audio = (
             any(k in (trigger_content or "") for k in voice_request_keywords)
             or "[VOICE]" in merged
-            or any(k in merged for k in voice_request_keywords)
         )
 
         # 2. Generate Audio
@@ -1096,7 +1095,6 @@ def trigger_dm_reply(role, user_content, user_id, room):
             any(k in (user_content or "") for k in voice_request_keywords)
             or "[VOICE]" in (user_content or "")
             or "[VOICE]" in merged
-            or any(k in merged for k in voice_request_keywords)
         )
 
         # 私聊随机语音 18%（私聊比群聊更亲密，语音频率可稍高）
