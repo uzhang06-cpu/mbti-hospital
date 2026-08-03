@@ -507,8 +507,9 @@ def split_bubbles(text):
 
 
 def sample_tokens():
-    """单条回复长度上限：多数很短、偶尔长一点（不是硬顶，保留自然变化）。"""
-    return random.choices([30, 45, 60, 80], weights=[30, 35, 22, 13])[0]
+    """安全上限（不是长度塑形器！长度靠提示词'短、一两句'+气泡上限控制）。
+    之前用 30-80 硬顶来压长度，导致回复被从句子中间硬生生截断——上限必须给足，让句子能说完。"""
+    return random.choices([110, 150, 190, 240], weights=[40, 32, 18, 10])[0]
 
 def _sim(a, b):
     """字符三元组 Jaccard 相似度，用来识别车轱辘话。"""
@@ -1070,23 +1071,16 @@ def trigger_ai_reply(role, trigger_role, trigger_content, user_id, room, is_star
 
         if not bubbles and not img_url: return
 
-        # 1. Detect Audio Intent（精确匹配，避免"语气"等词误触发）
+        # 语音判定：整条作为一条语音发出（音频=转写=完整回复），不再逐气泡发文字后又把它念一遍
+        clean_full = merged.replace("[VOICE]", "").strip()
         voice_request_keywords = ["发语音", "听语音", "说句话", "发条语音", "语音说", "用语音"]
-        force_audio = (
+        want_voice = (
             any(k in (trigger_content or "") for k in voice_request_keywords)
             or "[VOICE]" in merged
+            or (random.random() < 0.08 and len(clean_full) < 60)
         )
-
-        # 2. Generate Audio
-        # 群聊随机语音 8%（合理参考：真实微信群语音占比）
-        audio_url = ""
-        if (random.random() < 0.08 and len(merged) < 60) or force_audio:
-            clean_text = merged.replace("[VOICE]", "")
-            audio_text = (clean_text.split('。')[0] if '。' in clean_text else clean_text[:50]) if force_audio else clean_text
-            audio_url = generate_audio_url(audio_text, role)
-
-        # 3. Clean Tags from Content
-        merged = merged.replace("[VOICE]", "")
+        audio_url = generate_audio_url(clean_full[:200], role) if (want_voice and clean_full) else ""
+        merged = clean_full
         bubbles = [b.replace("[VOICE]", "") for b in bubbles]
 
         db = get_mdb()
@@ -1111,19 +1105,20 @@ def trigger_ai_reply(role, trigger_role, trigger_content, user_id, room, is_star
         decay_friction(user_id)
 
         socketio.sleep(read_delay(len(trigger_content or "")))
-        for i, bubble in enumerate(bubbles):
-            t, elapsed = simulate_typing(role, len(bubble)), 0
-            while elapsed < t:
-                socketio.emit("ai_message", {"role": role, "content": "", "mode": "typing"}, room=room)
-                chunk = min(2.4, t - elapsed)
-                socketio.sleep(chunk)
-                elapsed += chunk
-            is_last = (i == len(bubbles) - 1)
-            msg_payload = {"role": role, "content": bubble, "mode": "full", "id": uuid.uuid4().hex}
-            if is_last and audio_url:
-                msg_payload["audio"] = audio_url
-            socketio.emit("ai_message", msg_payload, room=room)
-            if not is_last: socketio.sleep(random.uniform(0.4, 1.0))
+        if audio_url:
+            socketio.sleep(min(simulate_typing(role, len(merged)), 5.0))  # 模拟录音时长
+            socketio.emit("ai_message", {"role": role, "content": merged, "audio": audio_url,
+                                         "mode": "full", "id": uuid.uuid4().hex}, room=room)
+        else:
+            for i, bubble in enumerate(bubbles):
+                t, elapsed = simulate_typing(role, len(bubble)), 0
+                while elapsed < t:
+                    socketio.emit("ai_message", {"role": role, "content": "", "mode": "typing"}, room=room)
+                    chunk = min(2.4, t - elapsed)
+                    socketio.sleep(chunk)
+                    elapsed += chunk
+                socketio.emit("ai_message", {"role": role, "content": bubble, "mode": "full", "id": uuid.uuid4().hex}, room=room)
+                if i < len(bubbles) - 1: socketio.sleep(random.uniform(0.4, 1.0))
 
         if img_url: socketio.emit("ai_message", {"role": role, "content": "", "image": img_url, "mode": "full", "id": uuid.uuid4().hex}, room=room)
 
@@ -1176,26 +1171,40 @@ def trigger_dm_reply(role, user_content, user_id, room):
 
         if not bubbles and not img_url: return
 
+        clean_full = merged.replace("[VOICE]", "").strip()
         voice_request_keywords = ["发语音", "听语音", "说句话", "发条语音", "语音说", "用语音"]
-        force_audio = (
+        want_voice = (
             any(k in (user_content or "") for k in voice_request_keywords)
             or "[VOICE]" in (user_content or "")
             or "[VOICE]" in merged
+            or (random.random() < 0.18 and len(clean_full) < 80)
         )
-
-        # 私聊随机语音 18%（私聊比群聊更亲密，语音频率可稍高）
-        audio_url = ""
-        # 语音内容统一用 merged（所有气泡合并），避免与附加位置错位
-        if (random.random() < 0.18 and len(merged) < 100) or force_audio:
-            clean_text = merged.replace("[VOICE]", "")
-            audio_text = clean_text[:200] if force_audio and len(clean_text) > 200 else clean_text
-            audio_url = generate_audio_url(audio_text, role)
-            
-        # Clean up marker in bubbles
-        bubbles = [b.replace("[VOICE]", "") for b in bubbles]
 
         db = get_mdb()
         socketio.sleep(read_delay(len(user_content or "")))
+
+        # 语音消息：整条作为一条语音发出（音频=转写=完整回复），不再逐条发文字；
+        # 否则会把已作为文字发出的气泡又用语音念一遍（= 之前"语音播放了上面两句话"的bug）
+        if want_voice and clean_full:
+            audio_text = clean_full[:200]
+            audio_url = generate_audio_url(audio_text, role)
+            if audio_url:
+                socketio.sleep(min(simulate_typing(role, len(clean_full)), 5.0))  # 模拟录音时长
+                socketio.emit("dm_reply", {"role": role, "content": audio_text, "audio": audio_url,
+                                           "mode": "full", "id": uuid.uuid4().hex}, room=room)
+                db["dm_messages"].insert_one({"user_id": user_id, "chat_role": role, "sender": role,
+                                              "content": audio_text, "image": "", "audio": audio_url,
+                                              "timestamp": datetime.utcnow()})
+                if img_url:
+                    socketio.emit("dm_reply", {"role": role, "content": "", "image": img_url,
+                                               "mode": "full", "id": uuid.uuid4().hex}, room=room)
+                    db["dm_messages"].insert_one({"user_id": user_id, "chat_role": role, "sender": role,
+                                                  "content": "", "image": img_url, "timestamp": datetime.utcnow()})
+                return
+            # TTS 失败 → 退回文字
+
+        # 文字气泡逐条发（不再往气泡上粘语音）
+        bubbles = [b.replace("[VOICE]", "") for b in bubbles]
         for i, bubble in enumerate(bubbles):
             t, elapsed = simulate_typing(role, len(bubble)), 0
             while elapsed < t:
@@ -1203,17 +1212,13 @@ def trigger_dm_reply(role, user_content, user_id, room):
                 chunk = min(2.4, t - elapsed)
                 socketio.sleep(chunk)
                 elapsed += chunk
-            is_last = (i == len(bubbles) - 1)
-            msg_payload = {"role": role, "content": bubble, "mode": "full", "id": uuid.uuid4().hex}
-            if is_last and audio_url:
-                msg_payload["audio"] = audio_url
-            socketio.emit("dm_reply", msg_payload, room=room)
+            socketio.emit("dm_reply", {"role": role, "content": bubble, "mode": "full", "id": uuid.uuid4().hex}, room=room)
             db["dm_messages"].insert_one({
                 "user_id": user_id, "chat_role": role, "sender": role,
-                "content": bubble, "image": "", "audio": audio_url if is_last else "",
+                "content": bubble, "image": "", "audio": "",
                 "timestamp": datetime.utcnow()
             })
-            if not is_last: socketio.sleep(random.uniform(0.4, 1.0))
+            if i < len(bubbles) - 1: socketio.sleep(random.uniform(0.4, 1.0))
 
         if img_url:
             socketio.emit("dm_reply", {"role": role, "content": "", "image": img_url, "mode": "full", "id": uuid.uuid4().hex}, room=room)
