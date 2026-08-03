@@ -485,6 +485,7 @@ def simulate_typing(role, text_len):
 
 
 def clean_raw(role, text):
+    text = text or ""   # 兜底：LLM 失败/无 key 时可能返回 None，避免下游正则崩
     text = re.sub(r'^(好的，|嗯，好的，|我来，)', '', text)
     # 去掉括号动作描述，比如（正在吃饭）（刚下班到家）——真人不这么说话
     text = re.sub(r'（[^）]{1,10}）', '', text)
