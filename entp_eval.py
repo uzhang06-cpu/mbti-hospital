@@ -147,8 +147,9 @@ def checks(bubbles, hist_texts):
     merged = " ".join(bubbles); res = {}
     res["ai_tone"] = (not AI_TONE.search(merged), AI_TONE.search(merged).group(0) if AI_TONE.search(merged) else "")
     last = merged.strip()[-1:] if merged.strip() else ""
-    # 截断判定：够长却不以终止符/常见句末字收尾 = 疑似被截断
-    res["truncate"] = (len(merged) < 10 or last in TERM or last in "了吗吧呢啊呀嘛哦噢嗷么呗咯喔哈", last)
+    # 截断判定（弱启发：拿不到API的finish_reason，只能靠尾字）。口语常以内容字收尾(搞定/前端)，
+    # 不能当截断；只把「以句中标点结尾」当明显截断信号。真·稳妥判定需 call_llm 回传 finish_reason。
+    res["truncate"] = (bool(merged.strip()) and last not in "，,、；;：:", last)
     res["len"] = (len(merged) <= 120, f"{len(merged)}字")
     res["bubble"] = (len(bubbles) <= 4, f"{len(bubbles)}条")
     res["leak"] = ("[IMG:" not in merged and "[VOICE]" not in merged, "有tag外漏" if ("[IMG:" in merged or "[VOICE]" in merged) else "")
@@ -196,6 +197,7 @@ def judge(case, reply):
 # ══════════ 跑 ══════════
 from collections import defaultdict
 agg = defaultdict(lambda: {"auto_pass": 0, "auto_tot": 0, "score": [], "ooc": 0, "n": 0})
+RESULTS = []
 print(f"{'ID':<5}{'维度':<9}{'判分':<5} 关键检查 / 裁判理由")
 print("-" * 92)
 for case in C:
@@ -214,6 +216,12 @@ for case in C:
         flag = "OOC" if j.get("ooc") else ("AI腔" if j.get("ai_tone") else ("跑题" if j.get("offtopic") else ""))
         print(f"{case['id']:<5}{case['dim']:<9}{j.get('score','?')!s:<5} "
               f"{('硬检查未过['+','.join(fails)+'] ') if fails else ''}{flag} {j.get('reason','')[:44]}")
+        print(f"      触发:{case.get('user','') or '(群里冒泡)'}  →  回复:{reply[:120]}")
+        RESULTS.append({"id": case["id"], "dim": case["dim"], "ctx": case["ctx"],
+                        "user": case.get("user", ""), "history": case.get("history", []),
+                        "reply": reply, "fails": fails, "judge": j})
+
+json.dump(RESULTS, open("entp_eval_result.json", "w", encoding="utf-8"), ensure_ascii=False, indent=2)
 
 print("\n" + "=" * 60 + "\n维度汇总")
 print(f"{'维度':<10}{'硬检查通过率':<14}{'裁判均分':<10}{'串人设次数'}")
